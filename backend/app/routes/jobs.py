@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 import uuid
+import threading
 from datetime import datetime
 
 from app.database import get_db, SessionLocal
@@ -124,7 +125,6 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
 @router.post("/submit", response_model=SubmitJobResponse)
 async def submit_job(
     request: SubmitJobRequest,
-    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db)
 ):
     """Submit an async processing job for batch evaluation."""
@@ -168,14 +168,13 @@ async def submit_job(
     db.add(job)
     db.commit()
 
-    # Start background processing
-    background_tasks.add_task(
-        process_job_background,
-        job_id,
-        valid_memory_ids,
-        policy_ids,
-        request.refresh_variants
+    # Start background processing in a separate thread (non-blocking)
+    thread = threading.Thread(
+        target=process_job_background,
+        args=(job_id, valid_memory_ids, policy_ids, request.refresh_variants),
+        daemon=True
     )
+    thread.start()
 
     return SubmitJobResponse(
         job_id=job_id,
