@@ -9,6 +9,7 @@ import IssuesPage from './pages/IssuesPage';
 import Sidebar from './components/Sidebar';
 import ModeSelector from './components/ModeSelector';
 import { ToastProvider } from './components/Toast';
+import { JobProvider } from './context/JobContext';
 import './App.css';
 
 function NavbarContent() {
@@ -228,9 +229,11 @@ function AppContent() {
 function App() {
   return (
     <ToastProvider>
-      <Router>
-        <AppContent />
-      </Router>
+      <JobProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </JobProvider>
     </ToastProvider>
   );
 }

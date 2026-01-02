@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { memoryAPI, complianceAPI, jobsAPI } from '../services/api';
+import { memoryAPI, complianceAPI } from '../services/api';
 import { useToast } from '../components/Toast';
+import { useJob } from '../context/JobContext';
 import ProcessingProgress from '../components/ProcessingProgress';
 
 function StatusBadge({ status }) {
@@ -20,82 +21,27 @@ function MemoriesPage() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState('all');
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [processing, setProcessing] = useState(false);
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [jobStatus, setJobStatus] = useState(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
-  const [activeJobId, setActiveJobId] = useState(() => {
-    // Restore active job from localStorage on mount
-    return localStorage.getItem('activeProcessingJobId') || null;
-  });
   const navigate = useNavigate();
   const toast = useToast();
-
-  // Persist activeJobId to localStorage
-  useEffect(() => {
-    if (activeJobId) {
-      localStorage.setItem('activeProcessingJobId', activeJobId);
-    } else {
-      localStorage.removeItem('activeProcessingJobId');
-    }
-  }, [activeJobId]);
+  const { jobStatus, isProcessing, submitJob } = useJob();
 
   useEffect(() => {
     loadMemories();
   }, []);
 
-  // Poll for job status in the background (non-blocking)
+  // Listen for job completion events (from global context)
   useEffect(() => {
-    if (!activeJobId) return;
-
-    // If we have an active job, show processing state
-    setProcessing(true);
-
-    let cancelled = false;
-    const pollInterval = setInterval(async () => {
-      if (cancelled) return;
-
-      try {
-        const response = await jobsAPI.getStatus(activeJobId);
-        const status = response.data;
-
-        if (!cancelled) {
-          setJobStatus(status);
-
-          if (status.status === 'completed' || status.status === 'failed') {
-            clearInterval(pollInterval);
-            setActiveJobId(null);
-            setProcessing(false);
-            setShowProgressModal(false);
-
-            if (status.status === 'completed') {
-              toast.success(`Processed ${status.completed_items} session(s)`, 'Complete');
-            } else {
-              toast.error(status.error_message || 'Processing failed', 'Error');
-            }
-
-            // Reload memories to reflect new state
-            loadMemories();
-          }
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Polling error:', err);
-          // Job might not exist anymore, clear it
-          if (err.response?.status === 404) {
-            setActiveJobId(null);
-            setProcessing(false);
-          }
-        }
-      }
-    }, 500);
-
-    return () => {
-      cancelled = true;
-      clearInterval(pollInterval);
+    const handleJobCompleted = () => {
+      loadMemories();
+      setShowProgressModal(false);
     };
-  }, [activeJobId, toast]);
+
+    window.addEventListener('jobCompleted', handleJobCompleted);
+    return () => window.removeEventListener('jobCompleted', handleJobCompleted);
+  }, []);
 
   const loadMemories = async () => {
     try {
@@ -148,32 +94,23 @@ function MemoriesPage() {
     if (selectedIds.size === 0) return;
 
     try {
-      setProcessing(true);
       setShowProgressModal(true);
-      setJobStatus(null);
-
-      // Submit async job - polling is handled by useEffect
-      const submitResponse = await jobsAPI.submit([...selectedIds]);
-      setActiveJobId(submitResponse.data.job_id);
+      await submitJob([...selectedIds]);
       setSelectedIds(new Set());
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
-      setProcessing(false);
       setShowProgressModal(false);
     }
   };
 
   const handleProcessSingle = async (memoryId) => {
     try {
-      setProcessing(true);
       // For single session, use sync API for speed
       await complianceAPI.processBatch([memoryId]);
       toast.success('Successfully processed session', 'Complete');
       await loadMemories();
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
-    } finally {
-      setProcessing(false);
     }
   };
 
@@ -188,16 +125,10 @@ function MemoriesPage() {
     }
 
     try {
-      setProcessing(true);
       setShowProgressModal(true);
-      setJobStatus(null);
-
-      // Submit async job - polling is handled by useEffect
-      const submitResponse = await jobsAPI.submit(unprocessedIds);
-      setActiveJobId(submitResponse.data.job_id);
+      await submitJob(unprocessedIds);
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
-      setProcessing(false);
       setShowProgressModal(false);
     }
   };
@@ -225,7 +156,7 @@ function MemoriesPage() {
           <button
             className="btn btn-primary"
             onClick={handleProcessAll}
-            disabled={processing}
+            disabled={isProcessing}
           >
             Process All Unprocessed ({counts.unprocessed})
           </button>
@@ -234,15 +165,15 @@ function MemoriesPage() {
           <button
             className="btn btn-success"
             onClick={handleProcessSelected}
-            disabled={processing}
+            disabled={isProcessing}
           >
-            {processing ? 'Processing...' : `Process Selected (${selectedIds.size})`}
+            {isProcessing ? 'Processing...' : `Process Selected (${selectedIds.size})`}
           </button>
         )}
         <button
           className="btn btn-secondary"
           onClick={() => setShowResetDialog(true)}
-          disabled={processing || resetting}
+          disabled={isProcessing || resetting}
         >
           Reset All Evaluations
         </button>
@@ -333,10 +264,10 @@ function MemoriesPage() {
                       <button
                         className="icon-button"
                         onClick={() => handleProcessSingle(memory.id)}
-                        disabled={processing}
+                        disabled={isProcessing}
                         title="Process session"
                       >
-                        {processing ? '↻' : '▶️'}
+                        {isProcessing ? '↻' : '▶️'}
                       </button>
                     </div>
                   </td>
