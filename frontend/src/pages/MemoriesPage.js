@@ -25,12 +25,77 @@ function MemoriesPage() {
   const [resetting, setResetting] = useState(false);
   const [jobStatus, setJobStatus] = useState(null);
   const [showProgressModal, setShowProgressModal] = useState(false);
+  const [activeJobId, setActiveJobId] = useState(() => {
+    // Restore active job from localStorage on mount
+    return localStorage.getItem('activeProcessingJobId') || null;
+  });
   const navigate = useNavigate();
   const toast = useToast();
+
+  // Persist activeJobId to localStorage
+  useEffect(() => {
+    if (activeJobId) {
+      localStorage.setItem('activeProcessingJobId', activeJobId);
+    } else {
+      localStorage.removeItem('activeProcessingJobId');
+    }
+  }, [activeJobId]);
 
   useEffect(() => {
     loadMemories();
   }, []);
+
+  // Poll for job status in the background (non-blocking)
+  useEffect(() => {
+    if (!activeJobId) return;
+
+    // If we have an active job, show processing state
+    setProcessing(true);
+
+    let cancelled = false;
+    const pollInterval = setInterval(async () => {
+      if (cancelled) return;
+
+      try {
+        const response = await jobsAPI.getStatus(activeJobId);
+        const status = response.data;
+
+        if (!cancelled) {
+          setJobStatus(status);
+
+          if (status.status === 'completed' || status.status === 'failed') {
+            clearInterval(pollInterval);
+            setActiveJobId(null);
+            setProcessing(false);
+            setShowProgressModal(false);
+
+            if (status.status === 'completed') {
+              toast.success(`Processed ${status.completed_items} session(s)`, 'Complete');
+            } else {
+              toast.error(status.error_message || 'Processing failed', 'Error');
+            }
+
+            // Reload memories to reflect new state
+            loadMemories();
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error('Polling error:', err);
+          // Job might not exist anymore, clear it
+          if (err.response?.status === 404) {
+            setActiveJobId(null);
+            setProcessing(false);
+          }
+        }
+      }
+    }, 500);
+
+    return () => {
+      cancelled = true;
+      clearInterval(pollInterval);
+    };
+  }, [activeJobId, toast]);
 
   const loadMemories = async () => {
     try {
@@ -87,29 +152,14 @@ function MemoriesPage() {
       setShowProgressModal(true);
       setJobStatus(null);
 
-      // Submit async job
+      // Submit async job - polling is handled by useEffect
       const submitResponse = await jobsAPI.submit([...selectedIds]);
-      const jobId = submitResponse.data.job_id;
-
-      // Poll for progress
-      const finalStatus = await jobsAPI.pollUntilComplete(jobId, (status) => {
-        setJobStatus(status);
-      });
-
-      if (finalStatus.status === 'completed') {
-        toast.success(`Successfully processed ${finalStatus.completed_items} session(s)`, 'Complete');
-      } else if (finalStatus.status === 'failed') {
-        toast.error(finalStatus.error_message || 'Processing failed', 'Error');
-      }
-
+      setActiveJobId(submitResponse.data.job_id);
       setSelectedIds(new Set());
-      await loadMemories();
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
-    } finally {
       setProcessing(false);
       setShowProgressModal(false);
-      setJobStatus(null);
     }
   };
 
@@ -142,28 +192,13 @@ function MemoriesPage() {
       setShowProgressModal(true);
       setJobStatus(null);
 
-      // Submit async job
+      // Submit async job - polling is handled by useEffect
       const submitResponse = await jobsAPI.submit(unprocessedIds);
-      const jobId = submitResponse.data.job_id;
-
-      // Poll for progress
-      const finalStatus = await jobsAPI.pollUntilComplete(jobId, (status) => {
-        setJobStatus(status);
-      });
-
-      if (finalStatus.status === 'completed') {
-        toast.success(`Successfully processed ${finalStatus.completed_items} session(s)`, 'Complete');
-      } else if (finalStatus.status === 'failed') {
-        toast.error(finalStatus.error_message || 'Processing failed', 'Error');
-      }
-
-      await loadMemories();
+      setActiveJobId(submitResponse.data.job_id);
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
-    } finally {
       setProcessing(false);
       setShowProgressModal(false);
-      setJobStatus(null);
     }
   };
 
@@ -341,12 +376,22 @@ function MemoriesPage() {
 
       {/* Processing progress modal */}
       {showProgressModal && (
-        <div className="processing-overlay">
-          <div className="processing-modal">
+        <div className="processing-overlay" onClick={() => setShowProgressModal(false)}>
+          <div className="processing-modal" onClick={(e) => e.stopPropagation()}>
             <ProcessingProgress
               jobStatus={jobStatus}
               title="Processing Sessions"
             />
+            <div className="modal-actions" style={{ marginTop: '1rem' }}>
+              <button
+                className="btn btn-secondary"
+                onClick={() => setShowProgressModal(false)}
+              >
+                {jobStatus?.status === 'completed' || jobStatus?.status === 'failed'
+                  ? 'Close'
+                  : 'Run in Background'}
+              </button>
+            </div>
           </div>
         </div>
       )}
