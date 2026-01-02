@@ -81,9 +81,9 @@ function MemoriesPage() {
 
     try {
       setProcessing(true);
-      toast.info(`Processing ${selectedIds.size} instance(s)...`, 'Processing');
+      toast.info(`Processing ${selectedIds.size} session(s)...`, 'Processing');
       await complianceAPI.processBatch([...selectedIds]);
-      toast.success(`Successfully processed ${selectedIds.size} instance(s)`, 'Complete');
+      toast.success(`Successfully processed ${selectedIds.size} session(s)`, 'Complete');
       setSelectedIds(new Set());
       await loadMemories();
     } catch (err) {
@@ -96,9 +96,9 @@ function MemoriesPage() {
   const handleProcessSingle = async (memoryId) => {
     try {
       setProcessing(true);
-      toast.info('Processing instance...', 'Processing');
+      toast.info('Processing session...', 'Processing');
       await complianceAPI.processBatch([memoryId]);
-      toast.success('Successfully processed instance', 'Complete');
+      toast.success('Successfully processed session', 'Complete');
       await loadMemories();
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
@@ -121,7 +121,7 @@ function MemoriesPage() {
     }
   };
 
-  if (loading) return <div className="loading">Loading agent instances...</div>;
+  if (loading) return <div className="loading">Loading sessions...</div>;
 
   return (
     <div className="memories-page">
@@ -170,16 +170,16 @@ function MemoriesPage() {
 
       {memories.length === 0 ? (
         <div className="empty-state">
-          <h3>No agent instances found</h3>
+          <h3>No sessions found</h3>
           <p>Add JSON files to the <code>sample_memories</code> folder to see them here</p>
         </div>
       ) : filteredMemories.length === 0 ? (
         <div className="empty-state">
-          <h3>No {filter} instances</h3>
+          <h3>No {filter} sessions</h3>
           <p>
             {filter === 'processed'
-              ? 'Process some instances to see them here'
-              : 'All instances have been processed'}
+              ? 'Process some sessions to see them here'
+              : 'All sessions have been processed'}
           </p>
         </div>
       ) : (
@@ -230,7 +230,7 @@ function MemoriesPage() {
                         className="icon-button"
                         onClick={() => handleProcessSingle(memory.id)}
                         disabled={processing}
-                        title="Process instance"
+                        title="Process session"
                       >
                         {processing ? '↻' : '▶️'}
                       </button>
@@ -249,7 +249,7 @@ function MemoriesPage() {
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <h3>Reset All Evaluations?</h3>
             <p>This will permanently delete all compliance evaluations and agent variant data.</p>
-            <p><strong>Warning:</strong> This action cannot be undone. You will need to re-process all agent instances.</p>
+            <p><strong>Warning:</strong> This action cannot be undone. You will need to re-process all sessions.</p>
             <div className="modal-actions">
               <button
                 className="btn btn-secondary"

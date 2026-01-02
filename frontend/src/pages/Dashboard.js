@@ -259,7 +259,7 @@ function Dashboard() {
         <div className="metrics-row">
           <div className="metric-item">
             <span className="metric-value">{summary.processed_memories || 0}</span>
-            <span className="metric-label">Instances</span>
+            <span className="metric-label">Sessions</span>
           </div>
           <div className="metric-divider"></div>
           <div className="metric-item">
@@ -278,7 +278,7 @@ function Dashboard() {
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => navigate('/memories')}>
-          Agent Instances
+          Sessions
         </button>
       </div>
 
@@ -331,7 +331,7 @@ function Dashboard() {
             ) : (
               <div className="empty-state">
                 <h3>No evaluations yet</h3>
-                <p>Upload agent instances and run compliance evaluations to see results</p>
+                <p>Upload sessions and run compliance evaluations to see results</p>
               </div>
             )}
           </div>
@@ -341,7 +341,7 @@ function Dashboard() {
         <div className="quadrant">
           <div className="card">
             <h3>Agent variants</h3>
-            <p className="card-subtitle">Unique tool usage patterns identified across agent instances.</p>
+            <p className="card-subtitle">Unique tool usage patterns identified across sessions.</p>
             {variantsLoading ? (
               <div className="loading">Loading variants...</div>
             ) : sortedVariants.length > 0 ? (
@@ -374,7 +374,7 @@ function Dashboard() {
             ) : (
               <div className="empty-state">
                 <h3>No patterns detected</h3>
-                <p>Upload agent instances to analyze tool usage patterns</p>
+                <p>Upload sessions to analyze tool usage patterns</p>
               </div>
             )}
           </div>
@@ -450,7 +450,7 @@ function Dashboard() {
         <div className="quadrant">
           <div className="card">
             <h3>Tool usage</h3>
-            <p className="card-subtitle">See which tools agents made most calls to across all instances.</p>
+            <p className="card-subtitle">See which tools agents made most calls to across all sessions.</p>
             {toolUsageLoading ? (
               <div className="loading">Loading tool usage data...</div>
             ) : toolUsageData.length > 0 ? (
@@ -477,7 +477,7 @@ function Dashboard() {
             ) : (
               <div className="empty-state">
                 <h3>No tool usage data</h3>
-                <p>Upload agent instances to see tool usage statistics</p>
+                <p>Upload sessions to see tool usage statistics</p>
               </div>
             )}
           </div>

@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List
 
 from app.database import get_db
-from app.models import Policy, ComplianceEvaluation, AgentVariant, ToolTransition
+from app.models import Policy, ComplianceEvaluation, AgentVariant, ToolTransition, SessionStatus
 from app.schemas import (
     EvaluateMemoryRequest,
     ComplianceEvaluationResponse,
@@ -147,6 +147,9 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
             "compliance_rate": (compliant_count / total_count * 100) if total_count > 0 else 0
         }
 
+    # Get all session statuses (for resolved state)
+    session_statuses = {s.session_id: s for s in db.query(SessionStatus).all()}
+
     # Get compliance status only for processed memories (fully evaluated)
     all_memories_data = []
 
@@ -187,10 +190,25 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
                         "severity": policy.severity
                     })
 
+        # Check for resolved status
+        session_status = session_statuses.get(memory["id"])
+        is_resolved = session_status and session_status.compliance_status == 'resolved'
+
+        # Determine compliance_status: 'compliant', 'issues', or 'resolved'
+        if is_resolved:
+            compliance_status = 'resolved'
+        elif non_compliant_evals == 0:
+            compliance_status = 'compliant'
+        else:
+            compliance_status = 'issues'
+
         all_memories_data.append({
             "memory_id": memory["id"],
             "memory_name": memory["name"],
             "is_compliant": non_compliant_evals == 0,
+            "compliance_status": compliance_status,
+            "resolved_at": session_status.resolved_at.isoformat() if is_resolved and session_status.resolved_at else None,
+            "resolved_by": session_status.resolved_by if is_resolved else None,
             "total_evaluations": total_evals,
             "compliant_evaluations": compliant_evals,
             "non_compliant_evaluations": non_compliant_evals,
@@ -307,13 +325,15 @@ async def process_batch(request: ProcessBatchRequest, db: Session = Depends(get_
 
 @router.delete("/reset")
 async def reset_evaluations(db: Session = Depends(get_db)):
-    """Delete all compliance evaluations and agent variants."""
+    """Delete all compliance evaluations, agent variants, and session statuses."""
     eval_count = db.query(ComplianceEvaluation).delete()
     db.query(ToolTransition).delete()
     variant_count = db.query(AgentVariant).delete()
+    session_status_count = db.query(SessionStatus).delete()
     db.commit()
     return {
         "message": "All evaluations reset",
         "evaluations_deleted": eval_count,
-        "variants_deleted": variant_count
+        "variants_deleted": variant_count,
+        "session_statuses_deleted": session_status_count
     }

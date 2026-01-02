@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "session_id": "10001",
+    "timestamp": "2026-01-01T17:00:00Z",
+    "duration_seconds": 42.0,
+    "business_identifiers": {
+      "customer_id": "CID54321",
+      "customer_name": "Acme Corporation",
+      "location": "Phoenix",
+      "order_id": "ORD-2025-001"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Process the pending orders for customer ID 54321. Check their account status, verify pending orders, and create invoices if appropriate."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll look up the customer account and any pending orders to determine the next steps."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Step1A",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": 54321
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Step1B",
+          "name": "get_pending_orders",
+          "input": {
+            "customer_id": 54321
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Step1A",
+          "content": "{\"customer_id\": 54321, \"status\": \"not_found\", \"error\": \"Customer not found\"}"
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Step1B",
+          "content": "{\"orders\": []}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I could not locate customer ID 54321 in the account system, so I did not create invoices or update any orders. This can happen if the ID is from a different system, includes leading zeros, or the customer is not yet provisioned in the billing domain.\nNext steps:\n1) Verify the customer ID in your customer master or CRM record and confirm the expected ID format for billing.\n2) If available, search by customer name to retrieve the correct billing customer ID.\n3) If the customer is new, confirm onboarding has completed in the billing system.\nIf you share the correct customer ID or an order ID tied to this customer, I can re-run the invoicing flow."
+    }
+  ]
+}

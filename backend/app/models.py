@@ -74,3 +74,21 @@ class ToolTransition(Base):
     variant_id = Column(Integer, ForeignKey("agent_variants.id"), nullable=True)  # Null = aggregate across all
 
     variant = relationship("AgentVariant", back_populates="transitions")
+
+
+class SessionStatus(Base):
+    """
+    Tracks session-level status including compliance resolution state.
+
+    processing_status: Computed from evaluations (not stored here)
+    compliance_status: Persisted status that can be marked as resolved
+    """
+    __tablename__ = "session_status"
+
+    session_id = Column(String, primary_key=True, index=True)  # Matches memory_id
+    compliance_status = Column(String, nullable=True)  # null | 'compliant' | 'issues' | 'resolved'
+    resolved_at = Column(DateTime, nullable=True)
+    resolved_by = Column(String, nullable=True)  # User who marked it resolved
+    resolution_notes = Column(Text, nullable=True)  # Optional notes about resolution
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

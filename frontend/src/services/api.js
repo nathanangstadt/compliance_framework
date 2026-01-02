@@ -9,7 +9,7 @@ const api = axios.create({
   },
 });
 
-// Agent Memory API
+// Session (Agent Memory) API
 export const memoryAPI = {
   list: () => api.get('/api/memories/'),
   get: (id) => api.get(`/api/memories/${id}`),
@@ -22,7 +22,16 @@ export const memoryAPI = {
     });
   },
   delete: (id) => api.delete(`/api/memories/${id}`),
+  resolve: (id, resolvedBy = null, notes = null) =>
+    api.post(`/api/memories/${id}/resolve`, {
+      resolved_by: resolvedBy,
+      resolution_notes: notes
+    }),
+  unresolve: (id) => api.post(`/api/memories/${id}/unresolve`),
 };
+
+// Alias for Session API (preferred terminology)
+export const sessionAPI = memoryAPI;
 
 // Policy API
 export const policyAPI = {

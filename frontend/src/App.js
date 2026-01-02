@@ -43,7 +43,7 @@ function NavbarContent() {
             </button>
             <div className="navbar-title-section">
               <h1>Issues</h1>
-              <p className="navbar-description">Agent Instance Evaluations</p>
+              <p className="navbar-description">Session Evaluations</p>
             </div>
           </div>
           <div className="navbar-right">
@@ -90,6 +90,12 @@ function NavbarContent() {
               >
                 Tool Flow
               </button>
+              <button
+                className={`navbar-tab ${activeTab === 'info' ? 'active' : ''}`}
+                onClick={() => handleTabChange('info')}
+              >
+                More Info
+              </button>
             </div>
             <span className="navbar-timestamp">
               {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
@@ -105,12 +111,12 @@ function NavbarContent() {
             <button
               className="back-arrow-button"
               onClick={() => navigate('/memories')}
-              title="Back to Agent Instances"
+              title="Back to Sessions"
             >
               &lt;
             </button>
             <div className="navbar-title-section" id="memory-detail-title">
-              <h1>Agent Instance</h1>
+              <h1>Session</h1>
               <p className="navbar-description">Order Management Agent</p>
             </div>
           </div>
@@ -156,7 +162,7 @@ function NavbarContent() {
               &lt;
             </button>
             <div className="navbar-title-section">
-              <h1>Agent Instances</h1>
+              <h1>Sessions</h1>
               <p className="navbar-description">Order Management Agent</p>
             </div>
           </div>

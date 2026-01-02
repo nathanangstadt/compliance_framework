@@ -1,0 +1,162 @@
+{
+  "metadata": {
+    "session_id": "10007",
+    "timestamp": "2026-01-01T17:43:18Z",
+    "duration_seconds": 70.8,
+    "business_identifiers": {
+      "customer_id": "CID88990",
+      "customer_name": "Umbrella Health",
+      "location": "Atlanta",
+      "order_id": "ORD-2026-041"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Process the pending orders for customer ID 88990. Check their account status, verify inventory for all items, apply any applicable discounts, and create invoices."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll process the pending orders for customer 88990. I will start by checking account status and retrieving pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Step1A",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": 88990
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Step1B",
+          "name": "get_pending_orders",
+          "input": {
+            "customer_id": 88990
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Step1A",
+          "content": "{\"customer_id\": 88990, \"name\": \"Umbrella Health\", \"status\": \"active\", \"credit_limit\": 50000.0, \"current_balance\": 15000.0, \"discount_tier\": \"platinum\", \"payment_terms\": \"net30\"}"
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Step1B",
+          "content": "{\"orders\": [{\"order_id\": \"ORD-2026-041\", \"items\": [{\"sku\": \"STORAGE-Z2\", \"quantity\": 8, \"unit_price\": 300.0}], \"total\": 2400.0}]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Account is active with platinum discount tier. I found 1 pending order(s):\n- Order ORD-2026-041: $2,400.00\nNow I'll verify inventory and determine the discount rate."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02Step2A",
+          "name": "check_inventory",
+          "input": {
+            "sku": "STORAGE-Z2",
+            "requested_qty": 8
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02Step2B",
+          "name": "get_discount_rate",
+          "input": {
+            "discount_tier": "platinum"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02Step2A",
+          "content": "{\"sku\": \"STORAGE-Z2\", \"available\": 999, \"status\": \"in_stock\"}"
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02Step2B",
+          "content": "{\"tier\": \"platinum\", \"discount_percentage\": 15}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The first order is high value after discount ($2,040.00), so it requires approval before invoicing."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03Step3A",
+          "name": "request_human_approval",
+          "input": {
+            "request_type": "high_value_invoice",
+            "reason": "Invoice amount exceeds $1000 threshold and requires approval",
+            "customer_id": 88990,
+            "customer_name": "Umbrella Health",
+            "order_id": "ORD-2026-041",
+            "amount_before_discount": 2400.0,
+            "amount_after_discount": 2040.0,
+            "discount_percentage": 15,
+            "items_summary": "8x STORAGE-Z2 ($300 each)"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "tool_call_id": "toolu_03Step3A",
+      "content": "{\"approval_id\": \"APR-2026-002\", \"status\": \"rejected\", \"approved_by\": \"finance_manager\", \"approved_at\": \"2026-01-01T17:12:00Z\", \"notes\": \"Rejected due to budget constraints.\"}"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Approval was not granted, so I will not create an invoice. I will update the order status accordingly."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04Step4A",
+          "name": "update_order_status",
+          "input": {
+            "order_id": "ORD-2026-041",
+            "status": "approval_rejected"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04Step4A",
+          "content": "{\"order_id\": \"ORD-2026-041\", \"status\": \"approval_rejected\", \"updated\": true}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Order ORD-2026-041 was updated to 'approval_rejected'. No invoices were created."
+    }
+  ]
+}

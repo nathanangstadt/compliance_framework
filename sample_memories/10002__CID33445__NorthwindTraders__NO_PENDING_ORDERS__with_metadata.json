@@ -1,0 +1,63 @@
+{
+  "metadata": {
+    "session_id": "10002",
+    "timestamp": "2026-01-01T17:07:13Z",
+    "duration_seconds": 42.0,
+    "business_identifiers": {
+      "customer_id": "CID33445",
+      "customer_name": "Northwind Traders",
+      "location": "Seattle",
+      "order_id": "ORD-2025-002"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Process the pending orders for customer ID 33445. Check their account status, verify inventory for all items, apply any applicable discounts, and create invoices."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will start by checking account status and retrieving pending orders for customer 33445."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Step1A",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": 33445
+          }
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01Step1B",
+          "name": "get_pending_orders",
+          "input": {
+            "customer_id": 33445
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Step1A",
+          "content": "{\"customer_id\": 33445, \"name\": \"Northwind Traders\", \"status\": \"active\", \"credit_limit\": 50000.0, \"current_balance\": 15000.0, \"discount_tier\": \"gold\", \"payment_terms\": \"net30\"}"
+        },
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01Step1B",
+          "content": "{\"orders\": []}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "No pending orders were found for this customer, so there is nothing to invoice right now.\nNext steps:\n1) If you expected orders, confirm the date range and order status filters used by the source system.\n2) Provide an order ID and I can check its current status and eligibility for invoicing.\n3) If orders are being created upstream, confirm they are reaching the pending state required for invoicing."
+    }
+  ]
+}

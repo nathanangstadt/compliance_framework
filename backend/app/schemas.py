@@ -179,7 +179,7 @@ class ToolTransitionsResponse(BaseModel):
 
 # Processing Status Schemas
 class ProcessingStatus(BaseModel):
-    """Processing status for an agent instance."""
+    """Processing status for a session."""
     is_processed: bool
     has_compliance: bool
     has_variants: bool
@@ -187,8 +187,52 @@ class ProcessingStatus(BaseModel):
     policies_total: int
 
 
+class ComplianceStatus(BaseModel):
+    """Compliance status for a session (persisted, can be resolved)."""
+    status: Optional[str] = None  # null | 'compliant' | 'issues' | 'resolved'
+    resolved_at: Optional[datetime] = None
+    resolved_by: Optional[str] = None
+    resolution_notes: Optional[str] = None
+
+
+class SessionMetadata(BaseModel):
+    """Optional metadata extracted from session JSON files."""
+    session_id: Optional[str] = None
+    timestamp: Optional[datetime] = None
+    duration_seconds: Optional[float] = None
+    user_id: Optional[str] = None
+    business_identifiers: Optional[Dict[str, Any]] = None  # order_id, case_id, etc.
+    tags: Optional[List[str]] = None
+    custom: Optional[Dict[str, Any]] = None  # Any additional metadata
+
+
+class SessionResponse(BaseModel):
+    """Response for a single session with all status info."""
+    id: str
+    name: str
+    uploaded_at: datetime
+    message_count: int
+    processing_status: ProcessingStatus
+    compliance_status: ComplianceStatus
+    metadata: Optional[SessionMetadata] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SessionDetailResponse(SessionResponse):
+    """Detailed session response including messages."""
+    messages: List[Dict[str, Any]]
+
+
+class ResolveSessionRequest(BaseModel):
+    """Request to mark a session as resolved."""
+    resolved_by: Optional[str] = None
+    resolution_notes: Optional[str] = None
+
+
 class ProcessBatchRequest(BaseModel):
-    """Request to process multiple agent instances."""
+    """Request to process multiple sessions."""
     memory_ids: List[str]
     refresh_variants: bool = True
 
