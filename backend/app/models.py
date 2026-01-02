@@ -92,3 +92,32 @@ class SessionStatus(Base):
     resolution_notes = Column(Text, nullable=True)  # Optional notes about resolution
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class ProcessingJob(Base):
+    """
+    Tracks async processing jobs for batch session evaluation.
+
+    Jobs are created when user submits batch processing request,
+    and polled for status until completion.
+    """
+    __tablename__ = "processing_jobs"
+
+    id = Column(String, primary_key=True, index=True)  # UUID
+    status = Column(String, nullable=False, default='pending')  # pending | running | completed | failed
+    job_type = Column(String, nullable=False, default='batch_evaluate')  # batch_evaluate | single_evaluate
+
+    # Progress tracking
+    total_items = Column(Integer, default=0)
+    completed_items = Column(Integer, default=0)
+    failed_items = Column(Integer, default=0)
+
+    # Input/output
+    input_data = Column(JSON, default={})  # memory_ids, policy_ids, etc.
+    results = Column(JSON, default=[])  # Results for each processed item
+    error_message = Column(Text, nullable=True)
+
+    # Timestamps
+    created_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, nullable=True)
+    completed_at = Column(DateTime, nullable=True)

@@ -242,3 +242,55 @@ class ProcessBatchResponse(BaseModel):
     processed: int
     results: List[Dict[str, Any]]
     variants_refreshed: bool
+
+
+# Async Processing Job Schemas
+class JobStatus(BaseModel):
+    """Status of a processing job."""
+    id: str
+    status: str  # pending | running | completed | failed
+    job_type: str
+    total_items: int
+    completed_items: int
+    failed_items: int
+    progress_percent: float
+    error_message: Optional[str] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class JobResult(BaseModel):
+    """Result details for a completed job."""
+    id: str
+    status: str
+    job_type: str
+    total_items: int
+    completed_items: int
+    failed_items: int
+    results: List[Dict[str, Any]]
+    error_message: Optional[str] = None
+    created_at: datetime
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
+
+
+class SubmitJobRequest(BaseModel):
+    """Request to submit an async processing job."""
+    memory_ids: List[str]
+    policy_ids: Optional[List[int]] = None  # If None, use all enabled policies
+    refresh_variants: bool = True
+
+
+class SubmitJobResponse(BaseModel):
+    """Response after submitting a job."""
+    job_id: str
+    status: str
+    total_items: int
+    message: str

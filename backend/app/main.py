@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routes import memories, policies, compliance, test, agent_variants
+from app.routes import memories, policies, compliance, test, agent_variants, jobs
 
 app = FastAPI(title="Policy Compliance Framework")
 
@@ -24,6 +24,7 @@ app.include_router(memories.router)
 app.include_router(policies.router)
 app.include_router(compliance.router)
 app.include_router(agent_variants.router)
+app.include_router(jobs.router)
 app.include_router(test.router)
 
 

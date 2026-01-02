@@ -70,4 +70,40 @@ export const agentVariantsAPI = {
   refresh: () => api.post('/api/agent-variants/refresh/'),
 };
 
+// Jobs API (Async Processing)
+export const jobsAPI = {
+  submit: (memoryIds, policyIds = null, refreshVariants = true) =>
+    api.post('/api/jobs/submit', {
+      memory_ids: memoryIds,
+      policy_ids: policyIds,
+      refresh_variants: refreshVariants
+    }),
+  getStatus: (jobId) => api.get(`/api/jobs/${jobId}/status`),
+  getResult: (jobId) => api.get(`/api/jobs/${jobId}/result`),
+  list: (status = null, limit = 10) =>
+    api.get('/api/jobs/', { params: { status, limit } }),
+  delete: (jobId) => api.delete(`/api/jobs/${jobId}`),
+
+  // Helper: Poll until job completes
+  pollUntilComplete: async (jobId, onProgress, intervalMs = 500, maxAttempts = 600) => {
+    let attempts = 0;
+    while (attempts < maxAttempts) {
+      const response = await api.get(`/api/jobs/${jobId}/status`);
+      const status = response.data;
+
+      if (onProgress) {
+        onProgress(status);
+      }
+
+      if (status.status === 'completed' || status.status === 'failed') {
+        return status;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, intervalMs));
+      attempts++;
+    }
+    throw new Error('Job polling timeout');
+  }
+};
+
 export default api;
