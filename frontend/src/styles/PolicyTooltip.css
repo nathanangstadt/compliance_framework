@@ -1,0 +1,75 @@
+.policy-tooltip-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.policy-tooltip {
+  position: fixed;
+  z-index: 10000;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  animation: tooltipFadeIn 0.15s ease-out;
+}
+
+.policy-tooltip-content {
+  background: rgba(44, 62, 80, 0.98);
+  color: white;
+  padding: 0.75rem;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  font-size: 0.9rem;
+  max-width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.policy-item {
+  padding: 0.25rem 0;
+}
+
+.policy-item:first-child {
+  padding-top: 0;
+}
+
+.policy-item:last-child {
+  padding-bottom: 0;
+}
+
+.policy-item .badge {
+  width: 100%;
+  text-align: left;
+  font-size: 0.85rem;
+  padding: 0.4rem 0.6rem;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+@keyframes tooltipFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, calc(-100% - 5px));
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -100%);
+  }
+}
+
+/* Scrollbar styling for tooltip */
+.policy-tooltip-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.policy-tooltip-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+.policy-tooltip-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+}
+
+.policy-tooltip-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

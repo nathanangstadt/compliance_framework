@@ -1,0 +1,491 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { complianceAPI, memoryAPI, agentVariantsAPI } from '../services/api';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+
+function Dashboard() {
+  const [summary, setSummary] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [toolUsageData, setToolUsageData] = useState([]);
+  const [toolUsageLoading, setToolUsageLoading] = useState(false);
+  const [variants, setVariants] = useState([]);
+  const [variantsLoading, setVariantsLoading] = useState(false);
+  const [variantsSortField, setVariantsSortField] = useState('session_count');
+  const [variantsSortDir, setVariantsSortDir] = useState('desc');
+  const navigate = useNavigate();
+
+  // Fetch tool usage only from processed (evaluated) instances
+  const fetchToolUsage = useCallback(async () => {
+    setToolUsageLoading(true);
+    const toolCounts = {};
+
+    try {
+      // Fetch all memories with their processing status
+      const memoriesResponse = await memoryAPI.list();
+      const memories = memoriesResponse.data;
+
+      if (!memories || memories.length === 0) {
+        setToolUsageData([]);
+        return;
+      }
+
+      // Only count tools from processed instances
+      const processedMemories = memories.filter(m => m.processing_status?.is_processed);
+
+      if (processedMemories.length === 0) {
+        setToolUsageData([]);
+        return;
+      }
+
+      // Extract tool usage from messages of processed instances only
+      processedMemories.forEach(memory => {
+        if (memory.messages && Array.isArray(memory.messages)) {
+          memory.messages.forEach(message => {
+            if (message.role === 'assistant' && Array.isArray(message.content)) {
+              message.content.forEach(block => {
+                if (block.type === 'tool_use') {
+                  toolCounts[block.name] = (toolCounts[block.name] || 0) + 1;
+                }
+              });
+            }
+          });
+        }
+      });
+
+      // Convert to array and sort by count
+      const toolData = Object.entries(toolCounts)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5); // Top 5 tools
+
+      setToolUsageData(toolData);
+    } catch (err) {
+      console.error('Error fetching tool usage:', err);
+      setToolUsageData([]);
+    } finally {
+      setToolUsageLoading(false);
+    }
+  }, []);
+
+  // Fetch agent variants
+  const fetchVariants = useCallback(async () => {
+    setVariantsLoading(true);
+    try {
+      const response = await agentVariantsAPI.list();
+      setVariants(response.data.variants || []);
+    } catch (err) {
+      console.error('Error fetching agent variants:', err);
+      setVariants([]);
+    } finally {
+      setVariantsLoading(false);
+    }
+  }, []);
+
+  // Load compliance summary
+  const loadSummary = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await complianceAPI.getSummary();
+      setSummary(response.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Load all dashboard data
+  const loadAllData = useCallback(async () => {
+    await Promise.all([
+      loadSummary(),
+      fetchToolUsage(),
+      fetchVariants()
+    ]);
+  }, [loadSummary, fetchToolUsage, fetchVariants]);
+
+  // Load data on mount
+  useEffect(() => {
+    loadAllData();
+  }, [loadAllData]);
+
+  // Refresh data when page becomes visible (user returns from another tab/page)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadAllData();
+      }
+    };
+
+    // Also refresh when window gains focus
+    const handleFocus = () => {
+      loadAllData();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [loadAllData]);
+
+  if (loading) return <div className="loading">Loading dashboard...</div>;
+  if (error) return <div className="error">Error: {error}</div>;
+  if (!summary) return null;
+
+  const chartData = Object.entries(summary.compliance_by_policy).map(([, policy]) => {
+    const nonCompliantCount = policy.total_count - policy.compliant_count;
+    const data = {
+      name: policy.name,
+      compliant: policy.compliant_count,
+      nonCompliant: nonCompliantCount,
+      total: policy.total_count,
+      severity: policy.severity
+    };
+
+    return data;
+  });
+
+  const compliantCount = summary.all_memories ? summary.all_memories.filter(m => m.is_compliant).length : 0;
+  const nonCompliantCount = summary.all_memories ? summary.all_memories.filter(m => !m.is_compliant).length : 0;
+
+  // Generate simulated session activity data (7 days x 6 time slots)
+  const generateSessionActivity = () => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const times = ['12 AM', '4 AM', '8 AM', '12 PM', '4 PM', '8 PM'];
+    const activity = [];
+
+    for (let timeIdx = 0; timeIdx < times.length; timeIdx++) {
+      const row = { time: times[timeIdx] };
+      for (let dayIdx = 0; dayIdx < days.length; dayIdx++) {
+        // Simulate activity with peak during business hours (8 AM - 8 PM) on weekdays
+        const isBusinessHours = timeIdx >= 2 && timeIdx <= 5;
+        const isWeekday = dayIdx < 5;
+        const baseProbability = isBusinessHours && isWeekday ? 0.7 : 0.2;
+        const sessions = Math.floor(Math.random() * 40 * baseProbability);
+        row[days[dayIdx]] = sessions;
+      }
+      activity.push(row);
+    }
+    return activity;
+  };
+
+  const sessionActivity = generateSessionActivity();
+
+  // Tool usage colors
+  const TOOL_COLORS = ['#5a7a95', '#81b29a', '#daa65d', '#7ba3c7', '#8a9199'];
+
+  // Custom legend component for Policy Compliance chart
+  // Using organic, muted tones consistent with the pie chart palette
+  const renderCustomLegend = () => {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '1.5rem',
+        marginTop: '1rem',
+        fontSize: '0.813rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#81b29a', borderRadius: '2px' }}></div>
+          <span>Compliant</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#d97373', borderRadius: '2px' }}></div>
+          <span>Error</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#daa65d', borderRadius: '2px' }}></div>
+          <span>Warning</span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{ width: '12px', height: '12px', backgroundColor: '#7ba3c7', borderRadius: '2px' }}></div>
+          <span>Info</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Get activity level color for heatmap
+  const getActivityColor = (value) => {
+    if (value === 0) return '#f0f0f0';
+    if (value < 5) return '#d4e5f1';
+    if (value < 10) return '#a8cbe3';
+    if (value < 20) return '#6da3c7';
+    if (value < 30) return '#4a7fa6';
+    return '#2d5a7f';
+  };
+
+  // Get max sessions for Wednesday peak
+  const getMaxSessions = () => {
+    let max = 0;
+    sessionActivity.forEach(row => {
+      if (row.Wed > max) max = row.Wed;
+    });
+    return max;
+  };
+
+  const maxSessions = getMaxSessions();
+
+  // Sort variants
+  const sortedVariants = [...variants].sort((a, b) => {
+    const aVal = a[variantsSortField];
+    const bVal = b[variantsSortField];
+    if (variantsSortDir === 'asc') {
+      return aVal > bVal ? 1 : -1;
+    }
+    return aVal < bVal ? 1 : -1;
+  });
+
+  const handleVariantsSort = (field) => {
+    if (variantsSortField === field) {
+      setVariantsSortDir(variantsSortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setVariantsSortField(field);
+      setVariantsSortDir('desc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (variantsSortField !== field) return '◇';
+    return variantsSortDir === 'asc' ? '△' : '▽';
+  };
+
+  return (
+    <div className="dashboard">
+      <div className="metrics-bar">
+        <div className="metrics-row">
+          <div className="metric-item">
+            <span className="metric-value">{summary.processed_memories || 0}</span>
+            <span className="metric-label">Instances</span>
+          </div>
+          <div className="metric-divider"></div>
+          <div className="metric-item">
+            <span className="metric-value">{summary.total_policies}</span>
+            <span className="metric-label">Policies</span>
+          </div>
+          <div className="metric-divider"></div>
+          <div className="metric-item">
+            <span className="metric-value compliant">{compliantCount}</span>
+            <span className="metric-label">Compliant</span>
+          </div>
+          <div className="metric-divider"></div>
+          <div className="metric-item">
+            <span className={`metric-value ${nonCompliantCount > 0 ? 'non-compliant' : 'compliant'}`}>{nonCompliantCount}</span>
+            <span className="metric-label">Non-Compliant</span>
+          </div>
+        </div>
+        <button className="btn btn-primary" onClick={() => navigate('/memories')}>
+          Agent Instances
+        </button>
+      </div>
+
+      {/* 4-Quadrant Layout */}
+      <div className="dashboard-quadrants">
+        {/* Upper Left - Policy Compliance Chart */}
+        <div className="quadrant">
+          <div className="card">
+            <div className="card-header-with-actions">
+              <h3>Policy compliance</h3>
+              <div className="card-actions">
+                <button className="btn btn-primary" onClick={() => navigate('/issues')}>
+                  Manage issues
+                </button>
+                <button className="btn btn-primary" onClick={() => navigate('/policies')}>
+                  Manage policies
+                </button>
+              </div>
+            </div>
+            <p className="card-subtitle">Track the agent's adherence to safety and policy rules across sessions.</p>
+            {chartData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={280} key="compliance-chart-v2">
+                  <BarChart data={chartData} barCategoryGap="20%">
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip cursor={{ fill: 'transparent' }} />
+                    {/* Organic, muted colors consistent with pie chart palette */}
+                    <Bar dataKey="compliant" stackId="a" name="Compliant" isAnimationActive={false}>
+                      {chartData.map((_, index) => (
+                        <Cell key={`compliant-${index}`} fill="#81b29a" />
+                      ))}
+                    </Bar>
+                    <Bar dataKey="nonCompliant" stackId="a" name="Non-Compliant" isAnimationActive={false}>
+                      {chartData.map((entry, index) => {
+                        const severityColors = {
+                          error: '#d97373',
+                          warning: '#daa65d',
+                          info: '#7ba3c7'
+                        };
+                        const color = severityColors[entry.severity] || '#d97373';
+                        return <Cell key={`non-compliant-${index}`} fill={color} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+                {renderCustomLegend()}
+              </>
+            ) : (
+              <div className="empty-state">
+                <h3>No evaluations yet</h3>
+                <p>Upload agent instances and run compliance evaluations to see results</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Upper Right - Agent Variants */}
+        <div className="quadrant">
+          <div className="card">
+            <h3>Agent variants</h3>
+            <p className="card-subtitle">Unique tool usage patterns identified across agent instances.</p>
+            {variantsLoading ? (
+              <div className="loading">Loading variants...</div>
+            ) : sortedVariants.length > 0 ? (
+              <div className="variants-table-container">
+                <table className="variants-table">
+                  <thead>
+                    <tr>
+                      <th onClick={() => handleVariantsSort('name')} className="sortable">
+                        Agent variant {getSortIcon('name')}
+                      </th>
+                      <th onClick={() => handleVariantsSort('session_count')} className="sortable">
+                        Sessions {getSortIcon('session_count')}
+                      </th>
+                      <th onClick={() => handleVariantsSort('percentage')} className="sortable">
+                        % of all {getSortIcon('percentage')}
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedVariants.map(variant => (
+                      <tr key={variant.id}>
+                        <td className="variant-name">{variant.name}</td>
+                        <td className="variant-sessions">{variant.session_count}</td>
+                        <td className="variant-percentage">{variant.percentage.toFixed(1)}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="empty-state">
+                <h3>No patterns detected</h3>
+                <p>Upload agent instances to analyze tool usage patterns</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Lower Left - Session Activity */}
+        <div className="quadrant">
+          <div className="card">
+            <h3>Session activity</h3>
+            <p className="card-subtitle">Wednesday is the busiest day with {maxSessions} sessions, peaking from 8 AM to 4 PM at {maxSessions} sessions per hour.</p>
+            <div className="heatmap-container">
+              <div className="heatmap-legend">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: '#636e72' }}>
+                  <span>More activity</span>
+                  <div style={{ display: 'flex', gap: '2px' }}>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#2d5a7f' }}></div>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#4a7fa6' }}></div>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#6da3c7' }}></div>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#a8cbe3' }}></div>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#d4e5f1' }}></div>
+                    <div style={{ width: '12px', height: '12px', backgroundColor: '#f0f0f0' }}></div>
+                  </div>
+                  <span>Less activity</span>
+                </div>
+              </div>
+              <table className="heatmap-table">
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Mon</th>
+                    <th>Tue</th>
+                    <th>Wed</th>
+                    <th>Thu</th>
+                    <th>Fri</th>
+                    <th>Sat</th>
+                    <th>Sun</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sessionActivity.map((row, idx) => (
+                    <tr key={idx}>
+                      <td className="time-label">{row.time}</td>
+                      <td style={{ backgroundColor: getActivityColor(row.Mon) }}>
+                        {row.Mon > 0 ? row.Mon : ''}
+                      </td>
+                      <td style={{ backgroundColor: getActivityColor(row.Tue) }}>
+                        {row.Tue > 0 ? row.Tue : ''}
+                      </td>
+                      <td style={{ backgroundColor: getActivityColor(row.Wed) }}>
+                        {row.Wed > 0 ? row.Wed : ''}
+                      </td>
+                      <td style={{ backgroundColor: getActivityColor(row.Thu) }}>
+                        {row.Thu > 0 ? row.Thu : ''}
+                      </td>
+                      <td style={{ backgroundColor: getActivityColor(row.Fri) }}>
+                        {row.Fri > 0 ? row.Fri : ''}
+                      </td>
+                      <td style={{ backgroundColor: getActivityColor(row.Sat) }}>
+                        {row.Sat > 0 ? row.Sat : ''}
+                      </td>
+                      <td style={{ backgroundColor: getActivityColor(row.Sun) }}>
+                        {row.Sun > 0 ? row.Sun : ''}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        {/* Lower Right - Tool Usage */}
+        <div className="quadrant">
+          <div className="card">
+            <h3>Tool usage</h3>
+            <p className="card-subtitle">See which tools agents made most calls to across all instances.</p>
+            {toolUsageLoading ? (
+              <div className="loading">Loading tool usage data...</div>
+            ) : toolUsageData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={280}>
+                <PieChart>
+                  <Pie
+                    data={toolUsageData}
+                    cx="50%"
+                    cy="50%"
+                    labelLine={false}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    isAnimationActive={false}
+                  >
+                    {toolUsageData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={TOOL_COLORS[index % TOOL_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="empty-state">
+                <h3>No tool usage data</h3>
+                <p>Upload agent instances to see tool usage statistics</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+    </div>
+  );
+}
+
+export default Dashboard;

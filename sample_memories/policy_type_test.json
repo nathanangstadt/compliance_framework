@@ -1,0 +1,68 @@
+{
+  "name": "Policy Type Test Instance",
+  "messages": [
+    {
+      "role": "user",
+      "content": "Create a high-value invoice for $50,000"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll create the invoice for you."
+        },
+        {
+          "type": "tool_use",
+          "id": "tool_1",
+          "name": "create_invoice",
+          "input": {
+            "amount": 50000,
+            "customer_id": "C123"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "tool_1",
+          "content": "Invoice created successfully"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The invoice has been created. Now I'll request approval."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "tool_2",
+          "name": "request_approval",
+          "input": {
+            "invoice_id": "INV-001"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "tool_2",
+          "content": "Approval requested"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I have requested approval for the invoice."
+    }
+  ]
+}
