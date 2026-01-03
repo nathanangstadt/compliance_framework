@@ -1,13 +1,19 @@
-# Policy Compliance Framework
+# Agent Compliance Framework
 
-A full-stack application for analyzing agent memory (LLM message exchanges) for policy compliance. Built with React frontend and FastAPI backend, deployable via Docker Compose.
+A comprehensive full-stack application for evaluating AI agent behavior against configurable compliance policies. Built with React frontend and FastAPI backend, deployable via Docker Compose.
 
 ## Features
 
-### Agent Memory Management
-- Upload agent memory files as JSON containing complete message exchanges with LLMs
-- List and manage uploaded agent memories
-- Process agent memories for compliance against defined policies
+### Multi-Agent Support
+- Manage multiple agents with isolated data and policies
+- Agent-scoped sessions, policies, evaluations, and variants
+- Complete agent deletion with database and filesystem cleanup
+
+### Session Management
+- Upload agent session files as JSON containing complete message exchanges with LLMs
+- Three processing states: Unprocessed, Needs Re-processing, Processed
+- Session metadata support (session_id, timestamp, duration, business identifiers)
+- Resolve/unresolve compliance issues with tracking
 
 ### Policy Management
 Support for multiple policy types:
@@ -17,12 +23,20 @@ Support for multiple policy types:
 3. **Tool Response Policy**: Validate successful tool responses
 4. **Compound Tool Policy**: Validate specific combinations of tool calls (e.g., approval before high-value actions)
 5. **Targeted LLM Evaluation Policy**: Use an LLM to evaluate specific messages for compliance
+6. **Composite Policy Builder**: Complex logic with IF_ANY_THEN_ALL, IF_ALL_THEN_ALL, REQUIRE_ALL, REQUIRE_ANY, FORBID_ALL
 
 ### Compliance Dashboard
-- Visualize compliance metrics with bar charts
-- View non-compliant agent instances
-- Review memory with compliance annotations
-- Visualize tool calls as a flow diagram
+- Agent selection with session statistics
+- Policy compliance charts and metrics
+- Agent variants detection and pattern analysis
+- Tool usage visualization with transition flow diagrams
+- Session activity heatmap
+- Full compliance review with messages, summary, and tool flow views
+
+### Async Processing
+- Background job processing with real-time progress tracking
+- Non-blocking batch evaluations with polling
+- Job status monitoring and cancellation
 
 ## Quick Start
 
@@ -34,6 +48,7 @@ Support for multiple policy types:
 
 1. Clone the repository:
 ```bash
+git clone <repository-url>
 cd compliance_framework
 ```
 
@@ -60,31 +75,33 @@ docker-compose up --build
 
 ## Usage
 
-### 1. Upload Agent Memories
+### 1. Select or Create Agent
 
-Navigate to "Agent Memories" and upload a JSON file containing agent messages. Sample files are available in the `sample_memories/` folder. The JSON should be in one of these formats:
+The application starts with an agent selection page. Each agent has:
+- Isolated sessions, policies, evaluations, and variants
+- Separate directory in `agent_data/<agent_id>/`
 
-**Format 1: Array of messages**
-```json
-[
-  {
-    "role": "user",
-    "content": "Hello"
-  },
-  {
-    "role": "assistant",
-    "content": "Hi there!"
-  }
-]
-```
+Sample agent `order_to_invoice` is included with 12 session files.
 
-**Format 2: Object with messages field**
+### 2. Upload Sessions
+
+Navigate to "Sessions" and upload JSON files. Sessions can include metadata:
+
 ```json
 {
+  "metadata": {
+    "session_id": "10001",
+    "timestamp": "2026-01-01T17:00:00Z",
+    "duration_seconds": 42.0,
+    "business_identifiers": {
+      "customer_id": "CID54321",
+      "customer_name": "Acme Corporation"
+    }
+  },
   "messages": [
     {
       "role": "user",
-      "content": "Hello"
+      "content": "Process order for customer 54321"
     },
     {
       "role": "assistant",
@@ -96,9 +113,9 @@ Navigate to "Agent Memories" and upload a JSON file containing agent messages. S
         {
           "type": "tool_use",
           "id": "toolu_123",
-          "name": "create_order",
+          "name": "get_customer_account",
           "input": {
-            "amount": 1500
+            "customer_id": 54321
           }
         }
       ]
@@ -109,7 +126,7 @@ Navigate to "Agent Memories" and upload a JSON file containing agent messages. S
         {
           "type": "tool_result",
           "tool_use_id": "toolu_123",
-          "content": "Order created successfully"
+          "content": "{\"status\": \"active\"}"
         }
       ]
     }
@@ -117,7 +134,7 @@ Navigate to "Agent Memories" and upload a JSON file containing agent messages. S
 }
 ```
 
-### 2. Define Policies
+### 3. Define Policies
 
 Navigate to "Policies" and create policies:
 
@@ -147,62 +164,116 @@ Navigate to "Policies" and create policies:
 - LLM Provider: anthropic
 - Model: claude-sonnet-4-5-20250929
 
-### 3. Evaluate Compliance
+### 4. Process Sessions
 
-From the "Agent Memories" page:
-- Click "Evaluate" on individual memories
-- Or click "Evaluate All" to evaluate all memories
+From the "Sessions" page:
+- Click "Process Session" on individual sessions
+- Or click "Process All Unprocessed" to process all sessions
+- Background job processing with real-time progress updates
 
-### 4. Review Results
+Sessions have three states:
+- **Unprocessed**: Never evaluated
+- **Needs Re-processing**: Evaluated but new policies added
+- **Processed**: Fully evaluated against all enabled policies
+
+### 5. Review Results
 
 Navigate to the "Dashboard" to see:
-- Compliance statistics
-- Charts showing compliance by policy
-- List of non-compliant memories
+- Agent variants (tool usage patterns)
+- Tool usage transition flow
+- Session statistics
 
-Click "Review" on any non-compliant memory to see:
+Navigate to "Issues" to see:
+- Sessions with compliance violations
+- Filter by policy and status
+- Resolve/unresolve compliance issues
+- View compliance details
+
+Click "Review" on any session to see:
 - **Messages Tab**: All messages with compliance violations highlighted
 - **Tool Flow Tab**: Visual representation of tool calls and their results
 - **Compliance Summary Tab**: Overview of policy results
+- **More Info Tab**: Session metadata and business identifiers
+
+### 6. Load Sample Policies
+
+For the `order_to_invoice` agent, load sample policies:
+
+```bash
+docker exec -it compliance_framework-backend-1 python3 load_order_to_invoice_policies.py
+```
+
+This creates 4 policies:
+- Large Invoice Check (tool call validation)
+- Concise Answer (response length)
+- No PII Data (LLM evaluation)
+- Response Quality (composite policy)
 
 ## Architecture
 
 ### Backend (FastAPI + SQLAlchemy)
 - RESTful API with automatic OpenAPI documentation
-- SQLite database for storing memories, policies, and evaluations
+- SQLite database for storing policies, evaluations, variants, and session statuses
+- Multi-agent data isolation via `agent_id` column
 - Policy evaluation engine supporting multiple policy types
+- Background job processing with threading
 - Integration with Anthropic and OpenAI APIs for LLM evaluations
+- Session files stored in `agent_data/<agent_id>/` directories
 
 ### Frontend (React)
 - Multi-page application with React Router
+- Agent-based routing (/:agentId/dashboard, /:agentId/sessions, etc.)
+- Global job context for async processing
 - Responsive UI with custom styling
 - Interactive charts using Recharts
-- Tool flow visualization
+- Tool flow visualization with Sankey diagrams
+- Toast notifications for user feedback
 
 ### Deployment
 - Docker containers for frontend and backend
 - Docker Compose for orchestration
-- Volume persistence for database and uploads
+- Volume persistence for database and agent data
+- Hot reload for development
 
 ## API Endpoints
 
-### Agent Memories
-- `POST /api/memories/upload` - Upload memory file
-- `GET /api/memories` - List all memories
-- `GET /api/memories/{id}` - Get specific memory
-- `DELETE /api/memories/{id}` - Delete memory
+### Agents
+- `GET /api/agents/` - List all agents
+- `GET /api/agents/{agent_id}` - Get agent details
+- `DELETE /api/agents/{agent_id}` - Delete agent and all data
+
+### Sessions
+- `GET /api/memories/{agent_id}/` - List sessions for agent
+- `GET /api/memories/{agent_id}/{memory_id}` - Get specific session
+- `POST /api/memories/{agent_id}/{memory_id}/resolve` - Mark session as resolved
+- `POST /api/memories/{agent_id}/{memory_id}/unresolve` - Remove resolved status
 
 ### Policies
-- `POST /api/policies` - Create policy
-- `GET /api/policies` - List all policies
-- `GET /api/policies/{id}` - Get specific policy
-- `PUT /api/policies/{id}` - Update policy
-- `DELETE /api/policies/{id}` - Delete policy
+- `POST /api/policies/{agent_id}/` - Create policy
+- `GET /api/policies/{agent_id}/` - List policies for agent
+- `GET /api/policies/{agent_id}/{id}` - Get specific policy
+- `PUT /api/policies/{agent_id}/{id}` - Update policy
+- `DELETE /api/policies/{agent_id}/{id}` - Delete policy
 
 ### Compliance
-- `POST /api/compliance/evaluate` - Evaluate memory against policies
-- `GET /api/compliance/summary` - Get compliance summary
-- `GET /api/compliance/memory/{id}` - Get evaluations for specific memory
+- `POST /api/compliance/{agent_id}/evaluate` - Evaluate session(s) against policies
+- `GET /api/compliance/{agent_id}/summary` - Get compliance summary
+- `GET /api/compliance/{agent_id}/memory/{id}` - Get evaluations for specific session
+- `POST /api/compliance/{agent_id}/process-batch` - Process multiple sessions
+- `DELETE /api/compliance/{agent_id}/reset` - Reset all compliance data
+
+### Agent Variants
+- `GET /api/agent-variants/{agent_id}/` - List agent variants
+- `GET /api/agent-variants/{agent_id}/transitions` - Get tool transitions
+- `GET /api/agent-variants/{agent_id}/{variant_id}` - Get variant details
+- `POST /api/agent-variants/{agent_id}/refresh` - Refresh variants
+
+### Jobs
+- `POST /api/jobs/submit` - Submit async processing job
+- `GET /api/jobs/{job_id}/status` - Get job status
+- `GET /api/jobs/{job_id}/result` - Get job result
+- `GET /api/jobs/` - List jobs
+- `DELETE /api/jobs/{job_id}` - Delete job
 
 ## Development
 
@@ -228,6 +299,12 @@ npm start
 2. Implement evaluation logic in `backend/app/services/policy_evaluator.py`
 3. Add UI configuration in `frontend/src/components/PolicyEditor.js`
 
+### Adding New Agents
+
+1. Create directory: `agent_data/<agent_id>/`
+2. Add session JSON files to the directory
+3. Sessions will be automatically discovered and listed
+
 ## Environment Variables
 
 ### Backend
@@ -237,6 +314,32 @@ npm start
 
 ### Frontend
 - `REACT_APP_API_URL` - Backend API URL (default: http://localhost:8000)
+
+## Project Structure
+
+```
+compliance_framework/
+├── agent_data/                 # Agent session files
+│   └── order_to_invoice/       # Sample agent
+│       └── *.json              # Session files
+├── backend/
+│   ├── app/
+│   │   ├── models.py           # SQLAlchemy models
+│   │   ├── schemas.py          # Pydantic schemas
+│   │   ├── routes/             # API routes
+│   │   └── services/           # Business logic
+│   ├── data/                   # SQLite database (volume)
+│   ├── requirements.txt
+│   └── load_order_to_invoice_policies.py  # Sample policy loader
+├── frontend/
+│   ├── src/
+│   │   ├── components/         # React components
+│   │   ├── pages/              # Page components
+│   │   ├── services/           # API client
+│   │   └── context/            # React context providers
+│   └── package.json
+└── docker-compose.yml
+```
 
 ## License
 
