@@ -197,17 +197,23 @@ Click "Review" on any session to see:
 
 ### 6. Load Sample Policies
 
-For the `order_to_invoice` agent, load sample policies:
+For the `order_to_invoice` agent, load sample policies using either script:
 
+**Option 1: Using the restore script (recommended for fresh builds):**
+```bash
+docker exec compliance_framework-backend-1 python3 restore_order_to_invoice_policies.py
+```
+
+**Option 2: Using the original loader:**
 ```bash
 docker exec -it compliance_framework-backend-1 python3 load_order_to_invoice_policies.py
 ```
 
-This creates 4 policies:
-- Large Invoice Check (tool call validation)
-- Concise Answer (response length)
-- No PII Data (LLM evaluation)
-- Response Quality (composite policy)
+Both scripts create the same 4 policies:
+- **Large Invoice** - IF_ALL_THEN_ALL composite policy requiring approval for invoices > $2,000
+- **No PII Data** - LLM validation to detect PII in responses
+- **Response Quality** - Multi-check semantic validation (clarity, sentiment, brand voice, safety)
+- **Concise Response** - Response length validation (50-200 tokens)
 
 ## Architecture
 
