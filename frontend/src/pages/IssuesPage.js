@@ -74,10 +74,10 @@ function IssuesPage() {
 
   return (
     <div className="issues-page">
-      {summary.all_memories && summary.all_memories.length > 0 ? (
-        <div className="card">
-          <div className="card-header-with-actions">
-            <h3>Sessions</h3>
+      <div className="card">
+        <div className="card-header-with-actions">
+          <h3>Sessions</h3>
+          {summary.all_memories && summary.all_memories.length > 0 && (
             <div className="filter-tabs">
               <button
                 className={`filter-tab ${filterStatus === 'all' ? 'active' : ''}`}
@@ -104,17 +104,27 @@ function IssuesPage() {
                 Compliant ({compliantCount})
               </button>
             </div>
-          </div>
-          <table className="table">
-            <thead>
+          )}
+        </div>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Session Name</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredMemories.length === 0 ? (
               <tr>
-                <th>Session Name</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <td colSpan="3" style={{ textAlign: 'center', padding: '2rem', color: '#6c757d' }}>
+                  {summary.all_memories && summary.all_memories.length > 0
+                    ? 'No sessions match this filter'
+                    : 'No sessions evaluated yet. Process sessions from the Sessions page to see compliance results.'}
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredMemories.map((memory) => {
+            ) : (
+              filteredMemories.map((memory) => {
                 const allPolicies = [
                   ...memory.policies_passed.map(p => ({ ...p, passed: true })),
                   ...memory.policies_violated.map(p => ({ ...p, passed: false }))
@@ -181,16 +191,11 @@ function IssuesPage() {
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
-      ) : (
-        <div className="empty-state">
-          <h3>No sessions found</h3>
-          <p>Upload sessions and run compliance evaluations to see results</p>
-        </div>
-      )}
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -76,7 +76,8 @@ const CHECK_TYPES = {
       { name: 'llm_provider', label: 'AI Provider', type: 'select', options: [
         { value: 'anthropic', label: 'Anthropic Claude' },
         { value: 'openai', label: 'OpenAI GPT' }
-      ], defaultValue: 'anthropic' }
+      ], defaultValue: 'anthropic' },
+      { name: 'model', label: 'Model', type: 'text', placeholder: 'claude-sonnet-4-5-20250929' }
     ],
     example: 'Check response for PII, inappropriate tone, or factual errors'
   },

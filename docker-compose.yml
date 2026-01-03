@@ -1,6 +1,24 @@
 version: '3.8'
 
 services:
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: compliance
+      POSTGRES_PASSWORD: compliance_dev
+      POSTGRES_DB: compliance_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - compliance-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U compliance -d compliance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build:
       context: ./backend
@@ -14,8 +32,11 @@ services:
     env_file:
       - ./backend/.env
     environment:
-      - DATABASE_URL=sqlite:///./data/compliance.db
+      - DATABASE_URL=postgresql://compliance:compliance_dev@postgres:5432/compliance_db
       - PYTHONUNBUFFERED=1
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - compliance-network
 
@@ -37,6 +58,7 @@ services:
 
 volumes:
   agent_memories:
+  postgres_data:
 
 networks:
   compliance-network:

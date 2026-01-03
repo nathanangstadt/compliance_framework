@@ -23,7 +23,6 @@ function MemoriesPage() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [showResetDialog, setShowResetDialog] = useState(false);
   const [resetting, setResetting] = useState(false);
-  const [showProgressModal, setShowProgressModal] = useState(false);
   const navigate = useNavigate();
   const toast = useToast();
   const { jobStatus, isProcessing, submitJob } = useJob();
@@ -36,7 +35,6 @@ function MemoriesPage() {
   useEffect(() => {
     const handleJobCompleted = () => {
       loadMemories();
-      setShowProgressModal(false);
     };
 
     window.addEventListener('jobCompleted', handleJobCompleted);
@@ -90,46 +88,32 @@ function MemoriesPage() {
     }
   };
 
-  const handleProcessSelected = async () => {
-    if (selectedIds.size === 0) return;
+  // Single handler for the process button - processes selected if any, otherwise all unprocessed
+  const handleProcess = async () => {
+    const idsToProcess = selectedIds.size > 0
+      ? [...selectedIds]
+      : memories.filter(m => !m.processing_status?.is_processed).map(m => m.id);
 
-    try {
-      setShowProgressModal(true);
-      await submitJob([...selectedIds]);
-      setSelectedIds(new Set());
-    } catch (err) {
-      toast.error(`Processing failed: ${err.message}`, 'Error');
-      setShowProgressModal(false);
-    }
-  };
-
-  const handleProcessSingle = async (memoryId) => {
-    try {
-      // For single session, use sync API for speed
-      await complianceAPI.processBatch([memoryId]);
-      toast.success('Successfully processed session', 'Complete');
-      await loadMemories();
-    } catch (err) {
-      toast.error(`Processing failed: ${err.message}`, 'Error');
-    }
-  };
-
-  const handleProcessAll = async () => {
-    const unprocessedIds = memories
-      .filter(m => !m.processing_status?.is_processed)
-      .map(m => m.id);
-
-    if (unprocessedIds.length === 0) {
+    if (idsToProcess.length === 0) {
       toast.info('All sessions are already processed', 'Info');
       return;
     }
 
     try {
-      setShowProgressModal(true);
-      await submitJob(unprocessedIds);
+      await submitJob(idsToProcess);
+      setSelectedIds(new Set());
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
-      setShowProgressModal(false);
+    }
+  };
+
+  const handleProcessSingle = async (memoryId) => {
+    try {
+      await complianceAPI.processBatch([memoryId]);
+      toast.success('Successfully processed session', 'Complete');
+      await loadMemories();
+    } catch (err) {
+      toast.error(`Processing failed: ${err.message}`, 'Error');
     }
   };
 
@@ -149,25 +133,23 @@ function MemoriesPage() {
 
   if (loading) return <div className="loading">Loading sessions...</div>;
 
+  // Determine button label based on selection state
+  const getProcessButtonLabel = () => {
+    if (isProcessing) return 'Processing...';
+    if (selectedIds.size > 0) return `Process Selected (${selectedIds.size})`;
+    return `Process All Unprocessed (${counts.unprocessed})`;
+  };
+
   return (
     <div className="memories-page">
       <div className="page-header-actions">
-        {counts.unprocessed > 0 && (
+        {(counts.unprocessed > 0 || selectedIds.size > 0) && (
           <button
             className="btn btn-primary"
-            onClick={handleProcessAll}
+            onClick={handleProcess}
             disabled={isProcessing}
           >
-            Process All Unprocessed ({counts.unprocessed})
-          </button>
-        )}
-        {selectedIds.size > 0 && (
-          <button
-            className="btn btn-success"
-            onClick={handleProcessSelected}
-            disabled={isProcessing}
-          >
-            {isProcessing ? 'Processing...' : `Process Selected (${selectedIds.size})`}
+            {getProcessButtonLabel()}
           </button>
         )}
         <button
@@ -178,6 +160,13 @@ function MemoriesPage() {
           Reset All Evaluations
         </button>
       </div>
+
+      {/* Inline progress bar when processing */}
+      {isProcessing && jobStatus && (
+        <div className="inline-progress">
+          <ProcessingProgress jobStatus={jobStatus} title="Processing Sessions" />
+        </div>
+      )}
 
       {error && <div className="error">Error: {error}</div>}
 
@@ -299,28 +288,6 @@ function MemoriesPage() {
                 disabled={resetting}
               >
                 {resetting ? 'Resetting...' : 'Reset All'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Processing progress modal */}
-      {showProgressModal && (
-        <div className="processing-overlay" onClick={() => setShowProgressModal(false)}>
-          <div className="processing-modal" onClick={(e) => e.stopPropagation()}>
-            <ProcessingProgress
-              jobStatus={jobStatus}
-              title="Processing Sessions"
-            />
-            <div className="modal-actions" style={{ marginTop: '1rem' }}>
-              <button
-                className="btn btn-secondary"
-                onClick={() => setShowProgressModal(false)}
-              >
-                {jobStatus?.status === 'completed' || jobStatus?.status === 'failed'
-                  ? 'Close'
-                  : 'Run in Background'}
               </button>
             </div>
           </div>

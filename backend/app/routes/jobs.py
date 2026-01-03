@@ -20,25 +20,52 @@ from app.routes.agent_variants import _compute_and_store_variants
 router = APIRouter(prefix="/api/jobs", tags=["jobs"])
 
 
-def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[int], refresh_variants: bool):
-    """Background task to process compliance evaluations."""
+def update_job_status(job_id: str, **updates):
+    """Update job status with a short-lived DB session."""
     db = SessionLocal()
     try:
         job = db.query(ProcessingJob).filter(ProcessingJob.id == job_id).first()
-        if not job:
-            return
+        if job:
+            for key, value in updates.items():
+                setattr(job, key, value)
+            db.commit()
+    finally:
+        db.close()
 
-        job.status = 'running'
-        job.started_at = datetime.utcnow()
-        db.commit()
+
+def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[int], refresh_variants: bool):
+    """Background task to process compliance evaluations.
+
+    Uses short-lived DB sessions to avoid holding locks during LLM calls.
+    """
+    try:
+        # Mark job as running
+        update_job_status(job_id, status='running', started_at=datetime.utcnow())
+
+        # Load policies once (short-lived session)
+        db = SessionLocal()
+        try:
+            policies_data = []
+            policies = db.query(Policy).filter(Policy.id.in_(policy_ids)).all() if policy_ids else \
+                       db.query(Policy).filter(Policy.enabled == True).all()
+            for p in policies:
+                policies_data.append({
+                    'id': p.id,
+                    'name': p.name,
+                    'description': p.description,
+                    'policy_type': p.policy_type,
+                    'config': p.config
+                })
+        finally:
+            db.close()
 
         evaluator = PolicyEvaluator()
-        policies = db.query(Policy).filter(Policy.id.in_(policy_ids)).all() if policy_ids else \
-                   db.query(Policy).filter(Policy.enabled == True).all()
-
         results = []
+        failed_count = 0
+
         for idx, memory_id in enumerate(memory_ids):
             try:
+                # Load memory from file (no DB needed)
                 memory = memory_loader.get_memory(memory_id)
                 if not memory:
                     results.append({
@@ -46,48 +73,62 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
                         "status": "not_found",
                         "error": "Memory not found"
                     })
-                    job.failed_items += 1
+                    failed_count += 1
                 else:
-                    eval_count = 0
-                    for policy in policies:
-                        # Delete existing evaluation
-                        db.query(ComplianceEvaluation).filter(
-                            ComplianceEvaluation.memory_id == memory_id,
-                            ComplianceEvaluation.policy_id == policy.id
-                        ).delete()
+                    evaluations_to_save = []
 
-                        # Evaluate
+                    for policy_data in policies_data:
+                        # Build config for evaluation
                         config_with_metadata = {
-                            **policy.config,
-                            'name': policy.name,
-                            'description': policy.description
+                            **policy_data['config'],
+                            'name': policy_data['name'],
+                            'description': policy_data['description']
                         }
+
+                        # This is the slow LLM call - NO DB session held here
                         is_compliant, details = evaluator.evaluate(
                             memory["messages"],
-                            policy.policy_type,
+                            policy_data['policy_type'],
                             config_with_metadata
                         )
 
-                        # Save evaluation
-                        evaluation = ComplianceEvaluation(
-                            memory_id=memory_id,
-                            policy_id=policy.id,
-                            is_compliant=is_compliant,
-                            violations=details
-                        )
-                        db.add(evaluation)
-                        eval_count += 1
+                        evaluations_to_save.append({
+                            'memory_id': memory_id,
+                            'policy_id': policy_data['id'],
+                            'is_compliant': is_compliant,
+                            'violations': details
+                        })
 
-                    db.commit()
+                    # Now save all evaluations with a short-lived session
+                    db = SessionLocal()
+                    try:
+                        for eval_data in evaluations_to_save:
+                            # Delete existing evaluation
+                            db.query(ComplianceEvaluation).filter(
+                                ComplianceEvaluation.memory_id == eval_data['memory_id'],
+                                ComplianceEvaluation.policy_id == eval_data['policy_id']
+                            ).delete()
+
+                            # Save new evaluation
+                            evaluation = ComplianceEvaluation(
+                                memory_id=eval_data['memory_id'],
+                                policy_id=eval_data['policy_id'],
+                                is_compliant=eval_data['is_compliant'],
+                                violations=eval_data['violations']
+                            )
+                            db.add(evaluation)
+                        db.commit()
+                    finally:
+                        db.close()
+
                     results.append({
                         "memory_id": memory_id,
                         "status": "success",
-                        "evaluations": eval_count
+                        "evaluations": len(evaluations_to_save)
                     })
 
-                job.completed_items = idx + 1
-                job.results = results
-                db.commit()
+                # Update job progress
+                update_job_status(job_id, completed_items=idx + 1, results=results, failed_items=failed_count)
 
             except Exception as e:
                 results.append({
@@ -95,31 +136,36 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
                     "status": "error",
                     "error": str(e)
                 })
-                job.failed_items += 1
-                job.results = results
-                db.commit()
+                failed_count += 1
+                update_job_status(job_id, failed_items=failed_count, results=results)
 
         # Refresh variants if requested
+        error_msg = None
         if refresh_variants:
+            db = SessionLocal()
             try:
                 _compute_and_store_variants(db)
             except Exception as e:
-                job.error_message = f"Variants refresh failed: {str(e)}"
+                error_msg = f"Variants refresh failed: {str(e)}"
+            finally:
+                db.close()
 
-        job.status = 'completed'
-        job.completed_at = datetime.utcnow()
-        job.results = results
-        db.commit()
+        # Mark job as completed
+        update_job_status(
+            job_id,
+            status='completed',
+            completed_at=datetime.utcnow(),
+            results=results,
+            error_message=error_msg
+        )
 
     except Exception as e:
-        job = db.query(ProcessingJob).filter(ProcessingJob.id == job_id).first()
-        if job:
-            job.status = 'failed'
-            job.error_message = str(e)
-            job.completed_at = datetime.utcnow()
-            db.commit()
-    finally:
-        db.close()
+        update_job_status(
+            job_id,
+            status='failed',
+            error_message=str(e),
+            completed_at=datetime.utcnow()
+        )
 
 
 @router.post("/submit", response_model=SubmitJobResponse)

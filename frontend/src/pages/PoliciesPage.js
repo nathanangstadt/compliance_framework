@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { policyAPI, memoryAPI, complianceAPI } from '../services/api';
+import { policyAPI, memoryAPI } from '../services/api';
 import CompositePolicyBuilder from '../components/CompositePolicyBuilder';
 import APIStatusBanner from '../components/APIStatusBanner';
+import ProcessingProgress from '../components/ProcessingProgress';
 import { useToast } from '../components/Toast';
+import { useJob } from '../context/JobContext';
 
 function PoliciesPage() {
   const [policies, setPolicies] = useState([]);
@@ -10,9 +12,10 @@ function PoliciesPage() {
   const [error, setError] = useState(null);
   const [showBuilder, setShowBuilder] = useState(false);
   const [editingPolicy, setEditingPolicy] = useState(null);
-  const [evaluatingPolicies, setEvaluatingPolicies] = useState(new Set());
+  const [evaluatingPolicyId, setEvaluatingPolicyId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const toast = useToast();
+  const { jobStatus, isProcessing, submitJob } = useJob();
 
   useEffect(() => {
     loadPolicies();
@@ -88,7 +91,10 @@ function PoliciesPage() {
   };
 
   const handleEvaluatePolicy = async (policyId, policyName) => {
-    setEvaluatingPolicies(prev => new Set([...prev, policyId]));
+    if (isProcessing) {
+      toast.info('A job is already running. Please wait.');
+      return;
+    }
 
     try {
       // Get all memories
@@ -96,38 +102,30 @@ function PoliciesPage() {
       const memories = memoriesResponse.data;
 
       if (memories.length === 0) {
-        toast.info('No agent instances found to evaluate');
+        toast.info('No sessions found to evaluate');
         return;
       }
 
-      // Evaluate this policy against all memories
-      let successCount = 0;
-      let failCount = 0;
+      // Track which policy we're evaluating for UI feedback
+      setEvaluatingPolicyId(policyId);
 
-      for (const memory of memories) {
-        try {
-          await complianceAPI.evaluate(memory.id, [policyId]);
-          successCount++;
-        } catch (err) {
-          console.error(`Failed to evaluate ${memory.name}:`, err);
-          failCount++;
-        }
-      }
+      // Submit async job with all memory IDs and this specific policy
+      const memoryIds = memories.map(m => m.id);
+      await submitJob(memoryIds, [policyId]);
 
-      const message = `Evaluated against ${memories.length} instance(s)\n\n✓ Success: ${successCount}` +
-        (failCount > 0 ? `\n✗ Failed: ${failCount}` : '');
-
-      toast.success(message, `Evaluated "${policyName}"`);
+      toast.success(`Started evaluation of "${policyName}" against ${memories.length} session(s)`);
     } catch (err) {
       toast.error(err.message, 'Evaluation Failed');
-    } finally {
-      setEvaluatingPolicies(prev => {
-        const next = new Set(prev);
-        next.delete(policyId);
-        return next;
-      });
+      setEvaluatingPolicyId(null);
     }
   };
+
+  // Clear evaluating policy ID when job completes
+  useEffect(() => {
+    if (!isProcessing && evaluatingPolicyId) {
+      setEvaluatingPolicyId(null);
+    }
+  }, [isProcessing, evaluatingPolicyId]);
 
   const getPolicyTypeBadge = (type, config) => {
     if (type === 'composite') {
@@ -178,6 +176,16 @@ function PoliciesPage() {
 
       <APIStatusBanner />
 
+      {/* Inline progress bar when evaluating */}
+      {isProcessing && evaluatingPolicyId && (
+        <div className="inline-progress">
+          <ProcessingProgress
+            jobStatus={jobStatus}
+            title={`Evaluating "${policies.find(p => p.id === evaluatingPolicyId)?.name || 'policy'}"`}
+          />
+        </div>
+      )}
+
       {error && <div className="error">Error: {error}</div>}
 
       {policies.length === 0 ? (
@@ -219,10 +227,10 @@ function PoliciesPage() {
                       <button
                         className="icon-button"
                         onClick={() => handleEvaluatePolicy(policy.id, policy.name)}
-                        disabled={evaluatingPolicies.has(policy.id)}
-                        title="Evaluate this policy against all agent instances"
+                        disabled={isProcessing}
+                        title="Evaluate this policy against all sessions"
                       >
-                        {evaluatingPolicies.has(policy.id) ? '↻' : '▶️'}
+                        {evaluatingPolicyId === policy.id ? '↻' : '▶️'}
                       </button>
                       <button
                         className="icon-button"
