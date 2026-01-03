@@ -135,9 +135,10 @@ function Dashboard() {
   if (error) return <div className="error">Error: {error}</div>;
   if (!summary) return null;
 
-  const chartData = Object.entries(summary.compliance_by_policy).map(([, policy]) => {
+  const chartData = Object.entries(summary.compliance_by_policy).map(([policyId, policy]) => {
     const nonCompliantCount = policy.total_count - policy.compliant_count;
     const data = {
+      policyId: parseInt(policyId, 10),
       name: policy.name,
       compliant: policy.compliant_count,
       nonCompliant: nonCompliantCount,
@@ -147,6 +148,23 @@ function Dashboard() {
 
     return data;
   });
+
+  // Handle bar click - navigate to issues with filter
+  const handleBarClick = (data, segment) => {
+    if (!data || !data.policyId) return;
+
+    const params = new URLSearchParams();
+    params.set('policy', data.policyId.toString());
+
+    // If clicking non-compliant segment, filter to show sessions that FAILED this policy
+    if (segment === 'nonCompliant' && data.nonCompliant > 0) {
+      params.set('policyStatus', 'violated');
+    } else if (segment === 'compliant' && data.compliant > 0) {
+      params.set('policyStatus', 'passed');
+    }
+
+    navigate(`/issues?${params.toString()}`);
+  };
 
   const compliantCount = summary.all_memories ? summary.all_memories.filter(m => m.is_compliant).length : 0;
   const nonCompliantCount = summary.all_memories ? summary.all_memories.filter(m => !m.is_compliant).length : 0;
@@ -308,12 +326,26 @@ function Dashboard() {
                     <YAxis />
                     <Tooltip cursor={{ fill: 'transparent' }} />
                     {/* Organic, muted colors consistent with pie chart palette */}
-                    <Bar dataKey="compliant" stackId="a" name="Compliant" isAnimationActive={false}>
+                    <Bar
+                      dataKey="compliant"
+                      stackId="a"
+                      name="Compliant"
+                      isAnimationActive={false}
+                      onClick={(data) => handleBarClick(data, 'compliant')}
+                      style={{ cursor: 'pointer' }}
+                    >
                       {chartData.map((_, index) => (
                         <Cell key={`compliant-${index}`} fill="#81b29a" />
                       ))}
                     </Bar>
-                    <Bar dataKey="nonCompliant" stackId="a" name="Non-Compliant" isAnimationActive={false}>
+                    <Bar
+                      dataKey="nonCompliant"
+                      stackId="a"
+                      name="Non-Compliant"
+                      isAnimationActive={false}
+                      onClick={(data) => handleBarClick(data, 'nonCompliant')}
+                      style={{ cursor: 'pointer' }}
+                    >
                       {chartData.map((entry, index) => {
                         const severityColors = {
                           error: '#d97373',

@@ -955,6 +955,130 @@ body {
   border-color: #3498db;
 }
 
+/* Filter Chips */
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid var(--color-border-light);
+}
+
+.filter-chips-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.375rem 0.75rem;
+  background-color: #5b9bd5;
+  color: white;
+  border-radius: 16px;
+  font-size: 0.813rem;
+  font-weight: 500;
+}
+
+.filter-chip-label {
+  opacity: 0.85;
+}
+
+.filter-chip-value {
+  font-weight: 600;
+}
+
+.filter-chip-remove {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin-left: 0.25rem;
+  background-color: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.2s;
+}
+
+.filter-chip-remove:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+}
+
+.filter-chip-violated {
+  background-color: #d97373;
+}
+
+.filter-chip-passed {
+  background-color: #81b29a;
+}
+
+.filter-chips-clear {
+  margin-left: auto;
+  padding: 0.25rem 0.5rem;
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  font-size: 0.813rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.filter-chips-clear:hover {
+  color: var(--color-text-primary);
+}
+
+/* Filter Controls */
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.filter-control-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
+
+.filter-select {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.875rem;
+  background-color: white;
+  color: var(--color-text-primary);
+  min-width: 200px;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #5b9bd5;
+  box-shadow: 0 0 0 2px rgba(91, 155, 213, 0.2);
+}
+
+.filter-select optgroup {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.filter-select option {
+  font-weight: normal;
+  padding: 0.25rem 0;
+}
+
 /* Modal styles */
 .modal-overlay {
   position: fixed;

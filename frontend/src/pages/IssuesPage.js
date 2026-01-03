@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { complianceAPI, memoryAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import PolicyTooltip from '../components/PolicyTooltip';
@@ -9,9 +9,35 @@ function IssuesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [filterPolicyId, setFilterPolicyId] = useState(null);
+  const [filterPolicyStatus, setFilterPolicyStatus] = useState(null); // 'violated' or 'passed'
   const [resolvingId, setResolvingId] = useState(null);
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const toast = useToast();
+
+  // Initialize filters from URL params
+  useEffect(() => {
+    const policyId = searchParams.get('policy');
+    const status = searchParams.get('status');
+    const policyStatus = searchParams.get('policyStatus'); // 'violated' or 'passed'
+
+    if (policyId) {
+      setFilterPolicyId(parseInt(policyId, 10));
+    } else {
+      setFilterPolicyId(null);
+    }
+
+    if (status && ['all', 'issues', 'resolved', 'compliant'].includes(status)) {
+      setFilterStatus(status);
+    }
+
+    if (policyStatus && ['violated', 'passed'].includes(policyStatus)) {
+      setFilterPolicyStatus(policyStatus);
+    } else {
+      setFilterPolicyStatus(null);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     loadSummary();
@@ -55,51 +81,187 @@ function IssuesPage() {
     }
   };
 
+  // Update URL params when filters change
+  const updateFilters = (newStatus, newPolicyId, newPolicyStatus) => {
+    const params = new URLSearchParams();
+    // Always include status in URL, even if 'all'
+    if (newStatus) {
+      params.set('status', newStatus);
+    }
+    if (newPolicyId) {
+      params.set('policy', newPolicyId.toString());
+    }
+    if (newPolicyStatus) {
+      params.set('policyStatus', newPolicyStatus);
+    }
+    setSearchParams(params);
+    setFilterStatus(newStatus || 'all');
+    setFilterPolicyId(newPolicyId);
+    setFilterPolicyStatus(newPolicyStatus);
+  };
+
+  const handleStatusChange = (status) => {
+    updateFilters(status, filterPolicyId, filterPolicyStatus);
+  };
+
+  const clearPolicyFilter = () => {
+    updateFilters(filterStatus, null, null);
+  };
+
+  const clearAllFilters = () => {
+    updateFilters('all', null, null);
+  };
+
   if (loading) return <div className="loading">Loading issues...</div>;
   if (error) return <div className="error">Error: {error}</div>;
   if (!summary) return null;
 
-  // Filter based on compliance_status
+  // Get policy name for filter chip display
+  const getFilteredPolicyName = () => {
+    if (!filterPolicyId || !summary.compliance_by_policy) return null;
+    const policy = summary.compliance_by_policy[filterPolicyId];
+    return policy ? policy.name : null;
+  };
+
+  const filteredPolicyName = getFilteredPolicyName();
+
+  // Filter based on compliance_status AND policy
   const filteredMemories = summary.all_memories ? summary.all_memories.filter(memory => {
-    if (filterStatus === 'compliant') return memory.compliance_status === 'compliant';
-    if (filterStatus === 'issues') return memory.compliance_status === 'issues';
-    if (filterStatus === 'resolved') return memory.compliance_status === 'resolved';
+    // Status filter
+    if (filterStatus === 'compliant' && memory.compliance_status !== 'compliant') return false;
+    if (filterStatus === 'issues' && memory.compliance_status !== 'issues') return false;
+    if (filterStatus === 'resolved' && memory.compliance_status !== 'resolved') return false;
+
+    // Policy filter - check if memory has this policy in violated or passed
+    if (filterPolicyId) {
+      const violatedPolicyIds = memory.policies_violated.map(p => p.policy_id);
+      const passedPolicyIds = memory.policies_passed.map(p => p.policy_id);
+
+      // If policyStatus is specified, filter more strictly
+      if (filterPolicyStatus === 'violated') {
+        if (!violatedPolicyIds.includes(filterPolicyId)) return false;
+      } else if (filterPolicyStatus === 'passed') {
+        if (!passedPolicyIds.includes(filterPolicyId)) return false;
+      } else {
+        // No specific status, just check if evaluated against this policy
+        const allPolicyIds = [...violatedPolicyIds, ...passedPolicyIds];
+        if (!allPolicyIds.includes(filterPolicyId)) return false;
+      }
+    }
+
     return true;
   }) : [];
 
-  // Counts for filter tabs
-  const compliantCount = summary.all_memories ? summary.all_memories.filter(m => m.compliance_status === 'compliant').length : 0;
-  const issuesCount = summary.all_memories ? summary.all_memories.filter(m => m.compliance_status === 'issues').length : 0;
-  const resolvedCount = summary.all_memories ? summary.all_memories.filter(m => m.compliance_status === 'resolved').length : 0;
+  // Counts for filter tabs (respect policy filter)
+  const getFilteredByPolicy = (memories) => {
+    if (!filterPolicyId) return memories;
+    return memories.filter(memory => {
+      const violatedPolicyIds = memory.policies_violated.map(p => p.policy_id);
+      const passedPolicyIds = memory.policies_passed.map(p => p.policy_id);
+
+      if (filterPolicyStatus === 'violated') {
+        return violatedPolicyIds.includes(filterPolicyId);
+      } else if (filterPolicyStatus === 'passed') {
+        return passedPolicyIds.includes(filterPolicyId);
+      }
+      return [...violatedPolicyIds, ...passedPolicyIds].includes(filterPolicyId);
+    });
+  };
+
+  const policyFilteredMemories = getFilteredByPolicy(summary.all_memories || []);
+  const compliantCount = policyFilteredMemories.filter(m => m.compliance_status === 'compliant').length;
+  const issuesCount = policyFilteredMemories.filter(m => m.compliance_status === 'issues').length;
+  const resolvedCount = policyFilteredMemories.filter(m => m.compliance_status === 'resolved').length;
+
+  // Get list of policies for the dropdown
+  const policyOptions = summary.compliance_by_policy
+    ? Object.entries(summary.compliance_by_policy).map(([id, policy]) => ({
+        id: parseInt(id, 10),
+        name: policy.name
+      })).sort((a, b) => a.name.localeCompare(b.name))
+    : [];
+
+  // Handle policy filter selection from dropdown
+  const handlePolicyFilterChange = (e) => {
+    const value = e.target.value;
+    if (value === '') {
+      updateFilters(filterStatus, null, null);
+    } else {
+      const [policyId, policyStatus] = value.split(':');
+      updateFilters(filterStatus, parseInt(policyId, 10), policyStatus || null);
+    }
+  };
+
+  // Get current dropdown value
+  const getCurrentFilterValue = () => {
+    if (!filterPolicyId) return '';
+    if (filterPolicyStatus) {
+      return `${filterPolicyId}:${filterPolicyStatus}`;
+    }
+    return `${filterPolicyId}`;
+  };
 
   return (
     <div className="issues-page">
+      {/* Filter controls */}
+      <div className="filter-controls">
+        <label className="filter-control-label">Filter by policy:</label>
+        <select
+          className="filter-select"
+          value={getCurrentFilterValue()}
+          onChange={handlePolicyFilterChange}
+        >
+          <option value="">All policies</option>
+          {policyOptions.map(policy => (
+            <optgroup key={policy.id} label={policy.name}>
+              <option value={`${policy.id}:violated`}>Failed: {policy.name}</option>
+              <option value={`${policy.id}:passed`}>Passed: {policy.name}</option>
+              <option value={`${policy.id}`}>Any: {policy.name}</option>
+            </optgroup>
+          ))}
+        </select>
+      </div>
+
+      {/* Filter chips - show active filter for quick dismissal */}
+      {filterPolicyId && (
+        <div className="filter-chips">
+          <span className="filter-chips-label">Active filter:</span>
+          <div className={`filter-chip ${filterPolicyStatus === 'violated' ? 'filter-chip-violated' : filterPolicyStatus === 'passed' ? 'filter-chip-passed' : ''}`}>
+            <span className="filter-chip-label">
+              {filterPolicyStatus === 'violated' ? 'Failed:' : filterPolicyStatus === 'passed' ? 'Passed:' : 'Policy:'}
+            </span>
+            <span className="filter-chip-value">{filteredPolicyName || `ID ${filterPolicyId}`}</span>
+            <button className="filter-chip-remove" onClick={clearPolicyFilter} title="Remove filter">×</button>
+          </div>
+        </div>
+      )}
+
       <div className="card">
         <div className="card-header-with-actions">
           <h3>Sessions</h3>
-          {summary.all_memories && summary.all_memories.length > 0 && (
+          {policyFilteredMemories.length > 0 && (
             <div className="filter-tabs">
               <button
                 className={`filter-tab ${filterStatus === 'all' ? 'active' : ''}`}
-                onClick={() => setFilterStatus('all')}
+                onClick={() => handleStatusChange('all')}
               >
-                All ({summary.all_memories.length})
+                All ({policyFilteredMemories.length})
               </button>
               <button
                 className={`filter-tab ${filterStatus === 'issues' ? 'active' : ''}`}
-                onClick={() => setFilterStatus('issues')}
+                onClick={() => handleStatusChange('issues')}
               >
                 Issues ({issuesCount})
               </button>
               <button
                 className={`filter-tab ${filterStatus === 'resolved' ? 'active' : ''}`}
-                onClick={() => setFilterStatus('resolved')}
+                onClick={() => handleStatusChange('resolved')}
               >
                 Resolved ({resolvedCount})
               </button>
               <button
                 className={`filter-tab ${filterStatus === 'compliant' ? 'active' : ''}`}
-                onClick={() => setFilterStatus('compliant')}
+                onClick={() => handleStatusChange('compliant')}
               >
                 Compliant ({compliantCount})
               </button>
@@ -162,7 +324,22 @@ function IssuesPage() {
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         <button
                           className="icon-button"
-                          onClick={() => navigate(`/compliance/${memory.memory_id}`)}
+                          onClick={() => {
+                            // Build returnUrl from current filter state
+                            const params = new URLSearchParams();
+                            if (filterStatus) params.set('status', filterStatus);
+                            if (filterPolicyId) params.set('policy', filterPolicyId.toString());
+                            if (filterPolicyStatus) params.set('policyStatus', filterPolicyStatus);
+
+                            const returnUrl = `/issues?${params.toString()}`;
+
+                            navigate(`/compliance/${memory.memory_id}`, {
+                              state: {
+                                navigationList: filteredMemories.map(m => m.memory_id),
+                                returnUrl: returnUrl
+                              }
+                            });
+                          }}
                           title="Review compliance details"
                         >
                           🔍

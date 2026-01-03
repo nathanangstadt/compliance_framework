@@ -16,11 +16,13 @@ function NavbarContent() {
   const location = useLocation();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('compliance');
+  const [returnUrl, setReturnUrl] = useState('/issues');
 
   // Sync with ComplianceReviewPage state
   useEffect(() => {
     if (location.pathname.startsWith('/compliance/') && window.complianceReviewState) {
       setActiveTab(window.complianceReviewState.activeTab);
+      setReturnUrl(window.complianceReviewState.returnUrl || '/issues');
     }
   }, [location.pathname]);
 
@@ -61,7 +63,7 @@ function NavbarContent() {
           <div className="navbar-left-with-back">
             <button
               className="back-arrow-button"
-              onClick={() => navigate('/issues')}
+              onClick={() => navigate(returnUrl)}
               title="Back to Issues"
             >
               &lt;

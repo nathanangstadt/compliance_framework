@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { memoryAPI, complianceAPI } from '../services/api';
 import MessageList from '../components/MessageList';
 import ToolFlowVisualization from '../components/ToolFlowVisualization';
@@ -206,14 +206,28 @@ function SessionInfoPanel({ memory, evaluations }) {
 
 function ComplianceReviewPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [memory, setMemory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [evaluations, setEvaluations] = useState([]);
+  const [allMemories, setAllMemories] = useState([]);
+  const [resolvingId, setResolvingId] = useState(null);
   const toast = useToast();
+
+  // Get navigation list from location state (passed from IssuesPage)
+  const navigationList = location.state?.navigationList || null;
+  const returnUrl = location.state?.returnUrl || '/issues';
 
   // Get active tab from window - set by navbar
   const [activeTab, setActiveTab] = useState('compliance');
+
+  // Expose returnUrl immediately for navbar (before useEffect runs)
+  window.complianceReviewState = window.complianceReviewState || {};
+  window.complianceReviewState.returnUrl = returnUrl;
+  window.complianceReviewState.activeTab = activeTab;
+  window.complianceReviewState.setActiveTab = setActiveTab;
 
   // Listen for tab changes from navbar
   useEffect(() => {
@@ -224,11 +238,23 @@ function ComplianceReviewPage() {
     return () => window.removeEventListener('complianceTabChange', handleTabChange);
   }, []);
 
-  // Expose current tab and setter for navbar
+  // Cleanup on unmount
   useEffect(() => {
-    window.complianceReviewState = { activeTab, setActiveTab };
     return () => { delete window.complianceReviewState; };
-  }, [activeTab]);
+  }, []);
+
+  // Load all memories for navigation
+  useEffect(() => {
+    const loadAllMemories = async () => {
+      try {
+        const response = await complianceAPI.getSummary();
+        setAllMemories(response.data.all_memories || []);
+      } catch (err) {
+        console.error('Failed to load all memories:', err);
+      }
+    };
+    loadAllMemories();
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -269,6 +295,66 @@ function ComplianceReviewPage() {
       toast.success('Policy re-evaluated successfully', 'Re-evaluation Complete');
     } catch (err) {
       toast.error(err.message, 'Re-evaluation Failed');
+    }
+  };
+
+  const handleResolve = async () => {
+    try {
+      setResolvingId(id);
+      await memoryAPI.resolve(id);
+      toast.success('Session marked as resolved', 'Resolved');
+      // Reload data to get updated compliance status
+      const [evalResponse, summaryResponse] = await Promise.all([
+        complianceAPI.getMemoryEvaluations(id),
+        complianceAPI.getSummary()
+      ]);
+      setEvaluations(evalResponse.data);
+      setAllMemories(summaryResponse.data.all_memories || []);
+    } catch (err) {
+      toast.error(`Failed to resolve: ${err.message}`, 'Error');
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
+  const handleUnresolve = async () => {
+    try {
+      setResolvingId(id);
+      await memoryAPI.unresolve(id);
+      toast.success('Session resolution removed', 'Unresolved');
+      // Reload data to get updated compliance status
+      const [evalResponse, summaryResponse] = await Promise.all([
+        complianceAPI.getMemoryEvaluations(id),
+        complianceAPI.getSummary()
+      ]);
+      setEvaluations(evalResponse.data);
+      setAllMemories(summaryResponse.data.all_memories || []);
+    } catch (err) {
+      toast.error(`Failed to unresolve: ${err.message}`, 'Error');
+    } finally {
+      setResolvingId(null);
+    }
+  };
+
+  // Navigation helpers - use navigationList if provided, otherwise use all memories
+  const navList = navigationList || allMemories.map(m => m.memory_id);
+  const currentIndex = navList.findIndex(memId => memId === id);
+  const hasPrevious = currentIndex > 0;
+  const hasNext = currentIndex >= 0 && currentIndex < navList.length - 1;
+
+  const handlePrevious = () => {
+    if (hasPrevious) {
+      navigate(`/compliance/${navList[currentIndex - 1]}`, {
+        state: location.state // Preserve navigation state
+      });
+    }
+  };
+
+  const handleNext = () => {
+    if (hasNext) {
+      navigate(`/compliance/${navList[currentIndex + 1]}`, {
+        state: location.state // Preserve navigation state
+      });
     }
   };
 
@@ -333,10 +419,60 @@ function ComplianceReviewPage() {
   if (error) return <div className="error">Error: {error}</div>;
   if (!memory) return <div className="error">Session not found</div>;
 
+  // Determine compliance status from summary
+  const currentMemoryData = allMemories.find(m => m.memory_id === id);
+  const complianceStatus = currentMemoryData?.compliance_status || 'compliant';
+  const hasIssues = complianceStatus === 'issues';
+  const isResolved = complianceStatus === 'resolved';
+
   return (
     <div className="memory-detail-page">
       <div className="memory-detail-header">
-        <span className="message-count">{memory.messages.length} messages</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          {/* Navigation buttons */}
+          <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={handlePrevious}
+              disabled={!hasPrevious}
+              title="Previous session"
+            >
+              ← Previous
+            </button>
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={handleNext}
+              disabled={!hasNext}
+              title="Next session"
+            >
+              Next →
+            </button>
+          </div>
+
+          <span className="message-count">{memory.messages.length} messages</span>
+
+          {/* Resolve/Unresolve buttons */}
+          {hasIssues && (
+            <button
+              className="btn btn-sm btn-success"
+              onClick={handleResolve}
+              disabled={resolvingId === id}
+              title="Mark as resolved"
+            >
+              {resolvingId === id ? '...' : 'Resolve'}
+            </button>
+          )}
+          {isResolved && (
+            <button
+              className="btn btn-sm btn-secondary"
+              onClick={handleUnresolve}
+              disabled={resolvingId === id}
+              title="Remove resolved status"
+            >
+              {resolvingId === id ? '...' : 'Unresolve'}
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="tab-content">
