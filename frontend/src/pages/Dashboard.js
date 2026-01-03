@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { complianceAPI, memoryAPI, agentVariantsAPI } from '../services/api';
+import { useNavigate, useParams } from 'react-router-dom';
+import { complianceAPI, memoryAPI, agentVariantsAPI, agentsAPI } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { useToast } from '../components/Toast';
 
 function Dashboard() {
+  const { agentId } = useParams();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,16 +15,58 @@ function Dashboard() {
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsSortField, setVariantsSortField] = useState('session_count');
   const [variantsSortDir, setVariantsSortDir] = useState('desc');
+
+  // Agent list state (for agent selection mode)
+  const [agents, setAgents] = useState([]);
+  const [deletingAgent, setDeletingAgent] = useState(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
   const navigate = useNavigate();
+  const toast = useToast();
+
+  // Load agents list (for agent selection mode)
+  const loadAgents = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await agentsAPI.list();
+      setAgents(response.data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Handle agent deletion
+  const handleDeleteAgent = async () => {
+    if (!deletingAgent) return;
+
+    try {
+      const response = await agentsAPI.delete(deletingAgent.id);
+      toast.success(`Agent "${deletingAgent.name}" deleted successfully`, 'Deleted');
+      setShowDeleteDialog(false);
+      setDeletingAgent(null);
+      await loadAgents();
+    } catch (err) {
+      toast.error(`Failed to delete agent: ${err.message}`, 'Error');
+    }
+  };
+
+  const openDeleteDialog = (e, agent) => {
+    e.stopPropagation(); // Prevent card click navigation
+    setDeletingAgent(agent);
+    setShowDeleteDialog(true);
+  };
 
   // Fetch tool usage only from processed (evaluated) instances
-  const fetchToolUsage = useCallback(async () => {
+  const fetchToolUsage = useCallback(async (agentId) => {
+    if (!agentId) return;  // Skip if no agentId
     setToolUsageLoading(true);
     const toolCounts = {};
 
     try {
       // Fetch all memories with their processing status
-      const memoriesResponse = await memoryAPI.list();
+      const memoriesResponse = await memoryAPI.list(agentId);
       const memories = memoriesResponse.data;
 
       if (!memories || memories.length === 0) {
@@ -30,7 +74,7 @@ function Dashboard() {
         return;
       }
 
-      // Only count tools from processed instances
+      // Only count tools from processed sessions (sessions evaluated against at least one policy)
       const processedMemories = memories.filter(m => m.processing_status?.is_processed);
 
       if (processedMemories.length === 0) {
@@ -38,7 +82,7 @@ function Dashboard() {
         return;
       }
 
-      // Extract tool usage from messages of processed instances only
+      // Extract tool usage from processed sessions
       processedMemories.forEach(memory => {
         if (memory.messages && Array.isArray(memory.messages)) {
           memory.messages.forEach(message => {
@@ -69,10 +113,11 @@ function Dashboard() {
   }, []);
 
   // Fetch agent variants
-  const fetchVariants = useCallback(async () => {
+  const fetchVariants = useCallback(async (agentId) => {
+    if (!agentId) return;  // Skip if no agentId
     setVariantsLoading(true);
     try {
-      const response = await agentVariantsAPI.list();
+      const response = await agentVariantsAPI.list(agentId);
       setVariants(response.data.variants || []);
     } catch (err) {
       console.error('Error fetching agent variants:', err);
@@ -83,10 +128,11 @@ function Dashboard() {
   }, []);
 
   // Load compliance summary
-  const loadSummary = useCallback(async () => {
+  const loadSummary = useCallback(async (agentId) => {
+    if (!agentId) return;  // Skip if no agentId
     try {
       setLoading(true);
-      const response = await complianceAPI.getSummary();
+      const response = await complianceAPI.getSummary(agentId);
       setSummary(response.data);
     } catch (err) {
       setError(err.message);
@@ -96,30 +142,45 @@ function Dashboard() {
   }, []);
 
   // Load all dashboard data
-  const loadAllData = useCallback(async () => {
+  const loadAllData = useCallback(async (agentId) => {
+    if (!agentId) return;
     await Promise.all([
-      loadSummary(),
-      fetchToolUsage(),
-      fetchVariants()
+      loadSummary(agentId),
+      fetchToolUsage(agentId),
+      fetchVariants(agentId)
     ]);
   }, [loadSummary, fetchToolUsage, fetchVariants]);
 
-  // Load data on mount
+  // Load data on mount - either agent list or dashboard data
   useEffect(() => {
-    loadAllData();
-  }, [loadAllData]);
+    if (!agentId) {
+      // Agent selection mode - load agents list
+      loadAgents();
+    } else {
+      // Agent-specific dashboard mode - load dashboard data
+      loadAllData(agentId);
+    }
+  }, [agentId, loadAgents, loadAllData]);
 
   // Refresh data when page becomes visible (user returns from another tab/page)
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        loadAllData();
+        if (!agentId) {
+          loadAgents();
+        } else {
+          loadAllData();
+        }
       }
     };
 
     // Also refresh when window gains focus
     const handleFocus = () => {
-      loadAllData();
+      if (!agentId) {
+        loadAgents();
+      } else {
+        loadAllData();
+      }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -129,8 +190,102 @@ function Dashboard() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('focus', handleFocus);
     };
-  }, [loadAllData]);
+  }, [agentId, loadAgents, loadAllData]);
 
+  // Agent selection mode - show agent list
+  if (!agentId) {
+    if (loading) return <div className="loading">Loading agents...</div>;
+    if (error) return <div className="error">Error: {error}</div>;
+
+    return (
+      <div className="dashboard">
+        <div className="agent-grid">
+          {agents.map(agent => (
+            <div
+              key={agent.id}
+              className="agent-card"
+              onClick={() => navigate(`/${agent.id}/dashboard`)}
+            >
+              <div className="agent-card-header">
+                <h2>{agent.name}</h2>
+                <span className="agent-id">{agent.id}</span>
+                <button
+                  className="icon-button"
+                  onClick={(e) => openDeleteDialog(e, agent)}
+                  title="Delete agent"
+                  style={{ marginLeft: 'auto' }}
+                >
+                  🗑️
+                </button>
+              </div>
+              <div className="agent-card-body">
+                <div className="agent-stat">
+                  <span className="stat-label">Sessions</span>
+                  <span className="stat-value">{agent.session_count}</span>
+                </div>
+              </div>
+              <div className="agent-card-footer">
+                <button className="btn btn-primary">
+                  View Dashboard →
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {agents.length === 0 && (
+          <div className="empty-state">
+            <h3>No agents found</h3>
+            <p>Create agent directories in <code>agent_data/</code> to get started.</p>
+          </div>
+        )}
+
+        {/* Delete confirmation dialog */}
+        {showDeleteDialog && deletingAgent && (
+          <div className="modal-overlay" onClick={() => setShowDeleteDialog(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <h3>Delete Agent</h3>
+              <p>
+                Are you sure you want to delete <strong>{deletingAgent.name}</strong>?
+              </p>
+              <p style={{ color: '#d9534f', marginTop: '1rem' }}>
+                This will permanently delete:
+              </p>
+              <ul style={{ textAlign: 'left', marginLeft: '2rem', color: '#666' }}>
+                <li>All {deletingAgent.session_count} session files</li>
+                <li>All policies</li>
+                <li>All compliance evaluations</li>
+                <li>All agent variants and patterns</li>
+                <li>The agent directory</li>
+              </ul>
+              <p style={{ color: '#d9534f', fontWeight: 'bold', marginTop: '1rem' }}>
+                This action cannot be undone.
+              </p>
+              <div className="modal-actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => {
+                    setShowDeleteDialog(false);
+                    setDeletingAgent(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn btn-danger"
+                  onClick={handleDeleteAgent}
+                >
+                  Delete Agent
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Agent-specific dashboard mode
   if (loading) return <div className="loading">Loading dashboard...</div>;
   if (error) return <div className="error">Error: {error}</div>;
   if (!summary) return null;
@@ -163,7 +318,7 @@ function Dashboard() {
       params.set('policyStatus', 'passed');
     }
 
-    navigate(`/issues?${params.toString()}`);
+    navigate(`/${agentId}/issues?${params.toString()}`);
   };
 
   const compliantCount = summary.all_memories ? summary.all_memories.filter(m => m.is_compliant).length : 0;
@@ -295,7 +450,7 @@ function Dashboard() {
             <span className="metric-label">Non-Compliant</span>
           </div>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/memories')}>
+        <button className="btn btn-primary" onClick={() => navigate(`/${agentId}/memories`)}>
           Sessions
         </button>
       </div>
@@ -308,10 +463,10 @@ function Dashboard() {
             <div className="card-header-with-actions">
               <h3>Policy compliance</h3>
               <div className="card-actions">
-                <button className="btn btn-primary" onClick={() => navigate('/issues')}>
+                <button className="btn btn-primary" onClick={() => navigate(`/${agentId}/issues`)}>
                   Manage issues
                 </button>
-                <button className="btn btn-primary" onClick={() => navigate('/policies')}>
+                <button className="btn btn-primary" onClick={() => navigate(`/${agentId}/policies`)}>
                   Manage policies
                 </button>
               </div>

@@ -33,7 +33,7 @@ def update_job_status(job_id: str, **updates):
         db.close()
 
 
-def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[int], refresh_variants: bool):
+def process_job_background(job_id: str, agent_id: str, memory_ids: List[str], policy_ids: List[int], refresh_variants: bool):
     """Background task to process compliance evaluations.
 
     Uses short-lived DB sessions to avoid holding locks during LLM calls.
@@ -46,8 +46,8 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
         db = SessionLocal()
         try:
             policies_data = []
-            policies = db.query(Policy).filter(Policy.id.in_(policy_ids)).all() if policy_ids else \
-                       db.query(Policy).filter(Policy.enabled == True).all()
+            policies = db.query(Policy).filter(Policy.id.in_(policy_ids), Policy.agent_id == agent_id).all() if policy_ids else \
+                       db.query(Policy).filter(Policy.enabled == True, Policy.agent_id == agent_id).all()
             for p in policies:
                 policies_data.append({
                     'id': p.id,
@@ -66,7 +66,7 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
         for idx, memory_id in enumerate(memory_ids):
             try:
                 # Load memory from file (no DB needed)
-                memory = memory_loader.get_memory(memory_id)
+                memory = memory_loader.get_memory(agent_id=agent_id, memory_id=memory_id)
                 if not memory:
                     results.append({
                         "memory_id": memory_id,
@@ -106,11 +106,13 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
                             # Delete existing evaluation
                             db.query(ComplianceEvaluation).filter(
                                 ComplianceEvaluation.memory_id == eval_data['memory_id'],
-                                ComplianceEvaluation.policy_id == eval_data['policy_id']
+                                ComplianceEvaluation.policy_id == eval_data['policy_id'],
+                                ComplianceEvaluation.agent_id == agent_id
                             ).delete()
 
                             # Save new evaluation
                             evaluation = ComplianceEvaluation(
+                                agent_id=agent_id,
                                 memory_id=eval_data['memory_id'],
                                 policy_id=eval_data['policy_id'],
                                 is_compliant=eval_data['is_compliant'],
@@ -144,7 +146,7 @@ def process_job_background(job_id: str, memory_ids: List[str], policy_ids: List[
         if refresh_variants:
             db = SessionLocal()
             try:
-                _compute_and_store_variants(db)
+                _compute_and_store_variants(db, agent_id=agent_id)
             except Exception as e:
                 error_msg = f"Variants refresh failed: {str(e)}"
             finally:
@@ -177,19 +179,25 @@ async def submit_job(
     # Validate memory_ids
     valid_memory_ids = []
     for memory_id in request.memory_ids:
-        memory = memory_loader.get_memory(memory_id)
+        memory = memory_loader.get_memory(agent_id=request.agent_id, memory_id=memory_id)
         if memory:
             valid_memory_ids.append(memory_id)
 
     if not valid_memory_ids:
         raise HTTPException(status_code=400, detail="No valid memory IDs provided")
 
-    # Get policy IDs
+    # Get policy IDs (filtered by agent)
     if request.policy_ids:
-        policies = db.query(Policy).filter(Policy.id.in_(request.policy_ids)).all()
+        policies = db.query(Policy).filter(
+            Policy.id.in_(request.policy_ids),
+            Policy.agent_id == request.agent_id
+        ).all()
         policy_ids = [p.id for p in policies]
     else:
-        policies = db.query(Policy).filter(Policy.enabled == True).all()
+        policies = db.query(Policy).filter(
+            Policy.enabled == True,
+            Policy.agent_id == request.agent_id
+        ).all()
         policy_ids = [p.id for p in policies]
 
     if not policy_ids:
@@ -199,12 +207,14 @@ async def submit_job(
     job_id = str(uuid.uuid4())
     job = ProcessingJob(
         id=job_id,
+        agent_id=request.agent_id,
         status='pending',
         job_type='batch_evaluate',
         total_items=len(valid_memory_ids),
         completed_items=0,
         failed_items=0,
         input_data={
+            'agent_id': request.agent_id,
             'memory_ids': valid_memory_ids,
             'policy_ids': policy_ids,
             'refresh_variants': request.refresh_variants
@@ -217,7 +227,7 @@ async def submit_job(
     # Start background processing in a separate thread (non-blocking)
     thread = threading.Thread(
         target=process_job_background,
-        args=(job_id, valid_memory_ids, policy_ids, request.refresh_variants),
+        args=(job_id, request.agent_id, valid_memory_ids, policy_ids, request.refresh_variants),
         daemon=True
     )
     thread.start()

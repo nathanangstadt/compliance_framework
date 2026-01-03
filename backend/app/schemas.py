@@ -283,6 +283,7 @@ class JobResult(BaseModel):
 
 class SubmitJobRequest(BaseModel):
     """Request to submit an async processing job."""
+    agent_id: str
     memory_ids: List[str]
     policy_ids: Optional[List[int]] = None  # If None, use all enabled policies
     refresh_variants: bool = True

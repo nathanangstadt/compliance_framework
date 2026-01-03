@@ -22,35 +22,33 @@ from app.services.memory_loader import memory_loader
 router = APIRouter(prefix="/api/agent-variants", tags=["agent-variants"])
 
 
-def _compute_and_store_variants(db: Session) -> None:
+def _compute_and_store_variants(db: Session, agent_id: str) -> None:
     """
-    Compute patterns from processed memories and store in database.
-    Clears existing data and recomputes from scratch.
-    Only includes memories that have compliance evaluations for all enabled policies.
+    Compute patterns from processed sessions and store in database.
+    Clears existing data for this agent and recomputes from scratch.
+
+    Only includes sessions that have been evaluated against at least one policy.
+    This ensures we only analyze sessions that have been through the compliance pipeline.
     """
-    # Clear existing data
-    db.query(ToolTransition).delete()
-    db.query(AgentVariant).delete()
+    # Clear existing data for this agent
+    db.query(ToolTransition).filter(ToolTransition.agent_id == agent_id).delete()
+    db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).delete()
     db.commit()
 
-    # Load all memories
-    memories = memory_loader.list_memories()
+    # Load all memories for this agent
+    memories = memory_loader.list_memories(agent_id=agent_id)
     if not memories:
         return
 
-    # Get enabled policies to determine which memories are "processed"
-    enabled_policies = db.query(Policy).filter(Policy.enabled == True).all()
-    enabled_policy_ids = {p.id for p in enabled_policies}
-
-    # Filter to only processed memories (evaluated against all enabled policies)
+    # Filter to only processed memories (evaluated against at least one policy)
     processed_memory_ids = set()
     for memory_meta in memories:
         memory_id = memory_meta["id"]
         evals = db.query(ComplianceEvaluation).filter(
-            ComplianceEvaluation.memory_id == memory_id
+            ComplianceEvaluation.memory_id == memory_id,
+            ComplianceEvaluation.agent_id == agent_id
         ).all()
-        evaluated_policy_ids = {e.policy_id for e in evals}
-        if enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids):
+        if len(evals) > 0:  # Has been evaluated against at least one policy
             processed_memory_ids.add(memory_id)
 
     # Only process memories that have been evaluated
@@ -63,7 +61,7 @@ def _compute_and_store_variants(db: Session) -> None:
     all_raw_sequences = []
 
     for memory_meta in processed_memories:
-        memory = memory_loader.get_memory(memory_meta["id"])
+        memory = memory_loader.get_memory(agent_id=agent_id, memory_id=memory_meta["id"])
         if not memory:
             continue
 
@@ -94,6 +92,7 @@ def _compute_and_store_variants(db: Session) -> None:
         name = pattern_extractor.generate_pattern_name(signature.normalized_sequence)
 
         variant = AgentVariant(
+            agent_id=agent_id,
             signature=sig_hash,
             name=name,
             normalized_sequence=signature.normalized_sequence,
@@ -110,6 +109,7 @@ def _compute_and_store_variants(db: Session) -> None:
 
     for (from_tool, to_tool), count in transitions.items():
         transition = ToolTransition(
+            agent_id=agent_id,
             from_tool=from_tool,
             to_tool=to_tool,
             count=count,
@@ -120,24 +120,26 @@ def _compute_and_store_variants(db: Session) -> None:
     db.commit()
 
 
-@router.get("/", response_model=AgentVariantListResponse)
+@router.get("/{agent_id}/", response_model=AgentVariantListResponse)
 async def list_agent_variants(
+    agent_id: str,
     refresh: bool = False,
     db: Session = Depends(get_db)
 ):
     """
-    List all unique agent variant patterns with session counts.
+    List all unique agent variant patterns with session counts for a specific agent.
 
     Args:
+        agent_id: The agent identifier
         refresh: If true, recompute patterns from all memories
     """
     # Only recompute if explicitly requested via refresh parameter
     # Do NOT auto-compute when empty - variants should only exist after processing
     if refresh:
-        _compute_and_store_variants(db)
+        _compute_and_store_variants(db, agent_id=agent_id)
 
-    # Get all variants
-    variants = db.query(AgentVariant).all()
+    # Get all variants for this agent
+    variants = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).all()
     total_sessions = sum(len(v.memory_ids) for v in variants)
 
     # Build response
@@ -171,8 +173,9 @@ async def list_agent_variants(
     )
 
 
-@router.get("/transitions", response_model=ToolTransitionsResponse)
+@router.get("/{agent_id}/transitions", response_model=ToolTransitionsResponse)
 async def get_tool_transitions(
+    agent_id: str,
     variant_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
@@ -180,12 +183,13 @@ async def get_tool_transitions(
     Get aggregated tool transition counts for flow diagram visualization.
 
     Args:
+        agent_id: The agent identifier
         variant_id: Optional filter to specific variant (not yet implemented)
     """
     # Do NOT auto-compute - transitions should only exist after processing
 
-    # Query transitions (aggregate for now)
-    query = db.query(ToolTransition)
+    # Query transitions (aggregate for now, filtered by agent)
+    query = db.query(ToolTransition).filter(ToolTransition.agent_id == agent_id)
     if variant_id:
         query = query.filter(ToolTransition.variant_id == variant_id)
     else:
@@ -218,22 +222,26 @@ async def get_tool_transitions(
     )
 
 
-@router.get("/{variant_id}", response_model=AgentVariantDetail)
+@router.get("/{agent_id}/{variant_id}", response_model=AgentVariantDetail)
 async def get_agent_variant(
+    agent_id: str,
     variant_id: int,
     db: Session = Depends(get_db)
 ):
     """Get detailed information for a specific agent variant pattern."""
-    variant = db.query(AgentVariant).filter(AgentVariant.id == variant_id).first()
+    variant = db.query(AgentVariant).filter(
+        AgentVariant.id == variant_id,
+        AgentVariant.agent_id == agent_id
+    ).first()
 
     if not variant:
         raise HTTPException(status_code=404, detail="Agent variant not found")
 
-    # Calculate stats
-    total_variants = db.query(AgentVariant).count()
+    # Calculate stats (scoped to this agent)
+    total_variants = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).count()
     all_memory_count = sum(
         len(v.memory_ids)
-        for v in db.query(AgentVariant).all()
+        for v in db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).all()
     )
 
     session_count = len(variant.memory_ids)
@@ -253,16 +261,16 @@ async def get_agent_variant(
     )
 
 
-@router.post("/refresh")
-async def refresh_variants(db: Session = Depends(get_db)):
-    """Force recomputation of all patterns from memories."""
-    _compute_and_store_variants(db)
+@router.post("/{agent_id}/refresh")
+async def refresh_variants(agent_id: str, db: Session = Depends(get_db)):
+    """Force recomputation of all patterns from memories for a specific agent."""
+    _compute_and_store_variants(db, agent_id=agent_id)
 
-    variant_count = db.query(AgentVariant).count()
-    transition_count = db.query(ToolTransition).count()
+    variant_count = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).count()
+    transition_count = db.query(ToolTransition).filter(ToolTransition.agent_id == agent_id).count()
 
     return {
-        "message": "Successfully refreshed agent variants",
+        "message": f"Successfully refreshed agent variants for {agent_id}",
         "variants_computed": variant_count,
         "transitions_computed": transition_count
     }

@@ -4,6 +4,10 @@ File-based memory loader service.
 Loads agent memories (sessions) directly from JSON files in the filesystem
 instead of requiring database uploads.
 
+Supports multi-agent structure with subdirectories under agent_data/:
+- agent_data/order_to_invoice/*.json
+- agent_data/hr_onboarding/*.json
+
 Supports optional metadata block in JSON files:
 {
     "metadata": {
@@ -28,20 +32,57 @@ from datetime import datetime
 class MemoryLoader:
     """Loads agent memories (sessions) from the filesystem."""
 
-    def __init__(self, memories_dir: str = "/sample_memories"):
+    def __init__(self, base_dir: str = "/agent_data"):
         """
         Initialize the memory loader.
 
         Args:
-            memories_dir: Directory containing memory JSON files
+            base_dir: Base directory containing agent subdirectories
         """
-        self.memories_dir = Path(memories_dir)
-        if not self.memories_dir.exists():
+        self.base_dir = Path(base_dir)
+        if not self.base_dir.exists():
             # Fallback to local path for development
-            self.memories_dir = Path(__file__).parent.parent.parent.parent / "sample_memories"
+            self.base_dir = Path(__file__).parent.parent.parent.parent / "agent_data"
 
-        print(f"MemoryLoader initialized with path: {self.memories_dir}")
-        print(f"Path exists: {self.memories_dir.exists()}")
+        print(f"MemoryLoader initialized with base path: {self.base_dir}")
+        print(f"Path exists: {self.base_dir.exists()}")
+
+    def _format_agent_name(self, agent_id: str) -> str:
+        """
+        Format agent_id into human-readable name.
+
+        Examples:
+            "order_to_invoice" -> "Order To Invoice"
+            "hr_onboarding" -> "HR Onboarding"
+        """
+        return " ".join(word.capitalize() for word in agent_id.split("_"))
+
+    def list_agents(self) -> List[Dict[str, Any]]:
+        """
+        List all available agents based on subdirectories in base_dir.
+
+        Returns:
+            List of agent dicts with id, name, session_count
+        """
+        agents = []
+
+        if not self.base_dir.exists():
+            print(f"Base directory does not exist: {self.base_dir}")
+            return agents
+
+        for agent_dir in sorted(self.base_dir.iterdir()):
+            if agent_dir.is_dir():
+                agent_id = agent_dir.name
+                sessions = list(agent_dir.glob("*.json"))
+
+                agents.append({
+                    "id": agent_id,
+                    "name": self._format_agent_name(agent_id),
+                    "session_count": len(sessions),
+                    "path": str(agent_dir)
+                })
+
+        return agents
 
     def _parse_metadata(self, data: Dict[str, Any], memory_id: str) -> Optional[Dict[str, Any]]:
         """
@@ -102,19 +143,30 @@ class MemoryLoader:
 
         return metadata if metadata else None
 
-    def list_memories(self) -> List[Dict[str, Any]]:
+    def list_memories(self, agent_id: str = None) -> List[Dict[str, Any]]:
         """
-        List all available memory files.
+        List all available memory files for a specific agent.
+
+        Args:
+            agent_id: The agent identifier (subdirectory name). If None, returns empty list for backward compatibility.
 
         Returns:
             List of memory metadata dicts with id, name, file_path, metadata, etc.
         """
         memories = []
 
-        if not self.memories_dir.exists():
+        # Backward compatibility: if no agent_id, return empty list
+        if agent_id is None:
+            print("Warning: list_memories called without agent_id. Multi-agent support requires agent_id parameter.")
             return memories
 
-        for file_path in sorted(self.memories_dir.glob("*.json")):
+        agent_dir = self.base_dir / agent_id
+
+        if not agent_dir.exists():
+            print(f"Agent directory does not exist: {agent_dir}")
+            return memories
+
+        for file_path in sorted(agent_dir.glob("*.json")):
             try:
                 # Use filename (without extension) as the ID
                 memory_id = file_path.stem
@@ -147,18 +199,25 @@ class MemoryLoader:
 
         return memories
 
-    def get_memory(self, memory_id: str) -> Optional[Dict[str, Any]]:
+    def get_memory(self, agent_id: str = None, memory_id: str = None) -> Optional[Dict[str, Any]]:
         """
-        Get a specific memory by ID (filename without extension).
+        Get a specific memory by agent and ID.
 
         Args:
+            agent_id: The agent identifier. If None, returns None for backward compatibility.
             memory_id: The memory ID (filename stem)
 
         Returns:
             Memory dict or None if not found
         """
+        # Backward compatibility: if no agent_id, return None
+        if agent_id is None or memory_id is None:
+            print("Warning: get_memory called without agent_id or memory_id. Multi-agent support requires both parameters.")
+            return None
+
         # Try to find file with this stem
-        file_path = self.memories_dir / f"{memory_id}.json"
+        agent_dir = self.base_dir / agent_id
+        file_path = agent_dir / f"{memory_id}.json"
 
         if not file_path.exists():
             return None

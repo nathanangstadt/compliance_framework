@@ -205,7 +205,7 @@ function SessionInfoPanel({ memory, evaluations }) {
 }
 
 function ComplianceReviewPage() {
-  const { id } = useParams();
+  const { agentId, id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
   const [memory, setMemory] = useState(null);
@@ -218,7 +218,7 @@ function ComplianceReviewPage() {
 
   // Get navigation list from location state (passed from IssuesPage)
   const navigationList = location.state?.navigationList || null;
-  const returnUrl = location.state?.returnUrl || '/issues';
+  const returnUrl = location.state?.returnUrl || `/${agentId}/issues`;
 
   // Get active tab from window - set by navbar
   const [activeTab, setActiveTab] = useState('compliance');
@@ -245,24 +245,26 @@ function ComplianceReviewPage() {
 
   // Load all memories for navigation
   useEffect(() => {
+    if (!agentId) return;
     const loadAllMemories = async () => {
       try {
-        const response = await complianceAPI.getSummary();
+        const response = await complianceAPI.getSummary(agentId);
         setAllMemories(response.data.all_memories || []);
       } catch (err) {
         console.error('Failed to load all memories:', err);
       }
     };
     loadAllMemories();
-  }, []);
+  }, [agentId]);
 
   useEffect(() => {
+    if (!agentId || !id) return;
     const loadData = async () => {
       try {
         setLoading(true);
         const [memoryResponse, evalResponse] = await Promise.all([
-          memoryAPI.get(id),
-          complianceAPI.getMemoryEvaluations(id)
+          memoryAPI.get(agentId, id),
+          complianceAPI.getMemoryEvaluations(agentId, id)
         ]);
         setMemory(memoryResponse.data);
         setEvaluations(evalResponse.data);
@@ -274,7 +276,7 @@ function ComplianceReviewPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [agentId, id]);
 
   // Update navbar title when memory is loaded
   useEffect(() => {
@@ -289,8 +291,8 @@ function ComplianceReviewPage() {
 
   const handleReEvaluatePolicy = async (policyId) => {
     try {
-      await complianceAPI.evaluate(id, [policyId]);
-      const evalResponse = await complianceAPI.getMemoryEvaluations(id);
+      await complianceAPI.evaluate(agentId, id, [policyId]);
+      const evalResponse = await complianceAPI.getMemoryEvaluations(agentId, id);
       setEvaluations(evalResponse.data);
       toast.success('Policy re-evaluated successfully', 'Re-evaluation Complete');
     } catch (err) {
@@ -301,12 +303,12 @@ function ComplianceReviewPage() {
   const handleResolve = async () => {
     try {
       setResolvingId(id);
-      await memoryAPI.resolve(id);
+      await memoryAPI.resolve(agentId, id);
       toast.success('Session marked as resolved', 'Resolved');
       // Reload data to get updated compliance status
       const [evalResponse, summaryResponse] = await Promise.all([
-        complianceAPI.getMemoryEvaluations(id),
-        complianceAPI.getSummary()
+        complianceAPI.getMemoryEvaluations(agentId, id),
+        complianceAPI.getSummary(agentId)
       ]);
       setEvaluations(evalResponse.data);
       setAllMemories(summaryResponse.data.all_memories || []);
@@ -320,12 +322,12 @@ function ComplianceReviewPage() {
   const handleUnresolve = async () => {
     try {
       setResolvingId(id);
-      await memoryAPI.unresolve(id);
+      await memoryAPI.unresolve(agentId, id);
       toast.success('Session resolution removed', 'Unresolved');
       // Reload data to get updated compliance status
       const [evalResponse, summaryResponse] = await Promise.all([
-        complianceAPI.getMemoryEvaluations(id),
-        complianceAPI.getSummary()
+        complianceAPI.getMemoryEvaluations(agentId, id),
+        complianceAPI.getSummary(agentId)
       ]);
       setEvaluations(evalResponse.data);
       setAllMemories(summaryResponse.data.all_memories || []);
@@ -344,7 +346,7 @@ function ComplianceReviewPage() {
 
   const handlePrevious = () => {
     if (hasPrevious) {
-      navigate(`/compliance/${navList[currentIndex - 1]}`, {
+      navigate(`/${agentId}/compliance/${navList[currentIndex - 1]}`, {
         state: location.state // Preserve navigation state
       });
     }
@@ -352,7 +354,7 @@ function ComplianceReviewPage() {
 
   const handleNext = () => {
     if (hasNext) {
-      navigate(`/compliance/${navList[currentIndex + 1]}`, {
+      navigate(`/${agentId}/compliance/${navList[currentIndex + 1]}`, {
         state: location.state // Preserve navigation state
       });
     }

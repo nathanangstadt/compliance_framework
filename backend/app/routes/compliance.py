@@ -18,18 +18,24 @@ from app.routes.agent_variants import _compute_and_store_variants
 router = APIRouter(prefix="/api/compliance", tags=["compliance"])
 
 
-@router.post("/evaluate", response_model=List[ComplianceEvaluationResponse])
-async def evaluate_memory(request: EvaluateMemoryRequest, db: Session = Depends(get_db)):
+@router.post("/{agent_id}/evaluate", response_model=List[ComplianceEvaluationResponse])
+async def evaluate_memory(agent_id: str, request: EvaluateMemoryRequest, db: Session = Depends(get_db)):
     """Evaluate an agent memory against policies."""
-    memory = memory_loader.get_memory(request.memory_id)
+    memory = memory_loader.get_memory(agent_id=agent_id, memory_id=request.memory_id)
     if not memory:
         raise HTTPException(status_code=404, detail="Memory not found")
 
-    # Get policies to evaluate against
+    # Get policies to evaluate against (filtered by agent)
     if request.policy_ids:
-        policies = db.query(Policy).filter(Policy.id.in_(request.policy_ids)).all()
+        policies = db.query(Policy).filter(
+            Policy.id.in_(request.policy_ids),
+            Policy.agent_id == agent_id
+        ).all()
     else:
-        policies = db.query(Policy).filter(Policy.enabled == True).all()
+        policies = db.query(Policy).filter(
+            Policy.enabled == True,
+            Policy.agent_id == agent_id
+        ).all()
 
     evaluator = PolicyEvaluator()
     results = []
@@ -38,7 +44,8 @@ async def evaluate_memory(request: EvaluateMemoryRequest, db: Session = Depends(
         # Delete existing evaluation for this memory-policy pair
         db.query(ComplianceEvaluation).filter(
             ComplianceEvaluation.memory_id == request.memory_id,
-            ComplianceEvaluation.policy_id == policy.id
+            ComplianceEvaluation.policy_id == policy.id,
+            ComplianceEvaluation.agent_id == agent_id
         ).delete()
         db.commit()  # Commit the deletion before creating new evaluation
 
@@ -57,6 +64,7 @@ async def evaluate_memory(request: EvaluateMemoryRequest, db: Session = Depends(
         # Save evaluation
         # Store details in violations column (holds violations when non-compliant, compliance details when compliant)
         evaluation = ComplianceEvaluation(
+            agent_id=agent_id,
             memory_id=request.memory_id,
             policy_id=policy.id,
             is_compliant=is_compliant,
@@ -89,14 +97,20 @@ async def evaluate_memory(request: EvaluateMemoryRequest, db: Session = Depends(
     return response_results
 
 
-@router.get("/summary", response_model=ComplianceSummary)
-async def get_compliance_summary(db: Session = Depends(get_db)):
-    """Get overall compliance summary."""
-    memories = memory_loader.list_memories()
+@router.get("/{agent_id}/summary", response_model=ComplianceSummary)
+async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
+    """Get overall compliance summary for a specific agent."""
+    memories = memory_loader.list_memories(agent_id=agent_id)
     total_memories = len(memories)
-    total_policies = db.query(Policy).filter(Policy.enabled == True).count()
+    total_policies = db.query(Policy).filter(
+        Policy.enabled == True,
+        Policy.agent_id == agent_id
+    ).count()
 
-    policies = db.query(Policy).filter(Policy.enabled == True).all()
+    policies = db.query(Policy).filter(
+        Policy.enabled == True,
+        Policy.agent_id == agent_id
+    ).all()
     enabled_policy_ids = {p.id for p in policies}
 
     # Get list of current memory IDs
@@ -107,7 +121,8 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
     for memory in memories:
         memory_id = memory["id"]
         evals = db.query(ComplianceEvaluation).filter(
-            ComplianceEvaluation.memory_id == memory_id
+            ComplianceEvaluation.memory_id == memory_id,
+            ComplianceEvaluation.agent_id == agent_id
         ).all()
         evaluated_policy_ids = {e.policy_id for e in evals}
         if enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids):
@@ -123,7 +138,8 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
             ComplianceEvaluation.memory_id,
             func.max(ComplianceEvaluation.id).label('max_id')
         ).filter(
-            ComplianceEvaluation.policy_id == policy.id
+            ComplianceEvaluation.policy_id == policy.id,
+            ComplianceEvaluation.agent_id == agent_id
         ).group_by(ComplianceEvaluation.memory_id).subquery()
 
         evaluations = db.query(ComplianceEvaluation).join(
@@ -147,19 +163,25 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
             "compliance_rate": (compliant_count / total_count * 100) if total_count > 0 else 0
         }
 
-    # Get all session statuses (for resolved state)
-    session_statuses = {s.session_id: s for s in db.query(SessionStatus).all()}
+    # Get all session statuses (for resolved state, filtered by agent)
+    session_statuses = {s.session_id: s for s in db.query(SessionStatus).filter(SessionStatus.agent_id == agent_id).all()}
 
-    # Get compliance status only for processed memories (fully evaluated)
+    # Get compliance status for all memories (both fully and partially evaluated)
     all_memories_data = []
 
     for memory in memories:
-        # Skip memories that haven't been fully processed
-        if memory["id"] not in processed_memory_ids:
-            continue
         memory_evals = db.query(ComplianceEvaluation).filter(
-            ComplianceEvaluation.memory_id == memory["id"]
+            ComplianceEvaluation.memory_id == memory["id"],
+            ComplianceEvaluation.agent_id == agent_id
         ).all()
+
+        # Skip memories with no evaluations at all
+        if not memory_evals:
+            continue
+
+        # Check if fully evaluated
+        evaluated_policy_ids = {e.policy_id for e in memory_evals}
+        is_fully_evaluated = enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids)
 
         # Calculate compliance status
         total_evals = len(memory_evals)
@@ -207,6 +229,9 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
             "memory_name": memory["name"],
             "is_compliant": non_compliant_evals == 0,
             "compliance_status": compliance_status,
+            "is_fully_evaluated": is_fully_evaluated,
+            "evaluated_policy_count": len(evaluated_policy_ids),
+            "total_policy_count": len(enabled_policy_ids),
             "resolved_at": session_status.resolved_at.isoformat() if is_resolved and session_status.resolved_at else None,
             "resolved_by": session_status.resolved_by if is_resolved else None,
             "total_evaluations": total_evals,
@@ -230,15 +255,16 @@ async def get_compliance_summary(db: Session = Depends(get_db)):
     )
 
 
-@router.get("/memory/{memory_id}", response_model=List[ComplianceEvaluationResponse])
-async def get_memory_evaluations(memory_id: str, db: Session = Depends(get_db)):
+@router.get("/{agent_id}/memory/{memory_id}", response_model=List[ComplianceEvaluationResponse])
+async def get_memory_evaluations(agent_id: str, memory_id: str, db: Session = Depends(get_db)):
     """Get all compliance evaluations for a specific memory."""
-    memory = memory_loader.get_memory(memory_id)
+    memory = memory_loader.get_memory(agent_id=agent_id, memory_id=memory_id)
     if not memory:
         raise HTTPException(status_code=404, detail="Memory not found")
 
     evaluations = db.query(ComplianceEvaluation).filter(
-        ComplianceEvaluation.memory_id == memory_id
+        ComplianceEvaluation.memory_id == memory_id,
+        ComplianceEvaluation.agent_id == agent_id
     ).all()
 
     # Enrich evaluations with policy names and separate violations from compliance_details
@@ -261,15 +287,18 @@ async def get_memory_evaluations(memory_id: str, db: Session = Depends(get_db)):
     return result
 
 
-@router.post("/process-batch", response_model=ProcessBatchResponse)
-async def process_batch(request: ProcessBatchRequest, db: Session = Depends(get_db)):
+@router.post("/{agent_id}/process-batch", response_model=ProcessBatchResponse)
+async def process_batch(agent_id: str, request: ProcessBatchRequest, db: Session = Depends(get_db)):
     """Process multiple memories: evaluate compliance and optionally refresh variants."""
     evaluator = PolicyEvaluator()
-    policies = db.query(Policy).filter(Policy.enabled == True).all()
+    policies = db.query(Policy).filter(
+        Policy.enabled == True,
+        Policy.agent_id == agent_id
+    ).all()
     results = []
 
     for memory_id in request.memory_ids:
-        memory = memory_loader.get_memory(memory_id)
+        memory = memory_loader.get_memory(agent_id=agent_id, memory_id=memory_id)
         if not memory:
             results.append({"memory_id": memory_id, "status": "not_found"})
             continue
@@ -280,7 +309,8 @@ async def process_batch(request: ProcessBatchRequest, db: Session = Depends(get_
             # Delete existing evaluation for this memory-policy pair
             db.query(ComplianceEvaluation).filter(
                 ComplianceEvaluation.memory_id == memory_id,
-                ComplianceEvaluation.policy_id == policy.id
+                ComplianceEvaluation.policy_id == policy.id,
+                ComplianceEvaluation.agent_id == agent_id
             ).delete()
 
             # Evaluate
@@ -297,6 +327,7 @@ async def process_batch(request: ProcessBatchRequest, db: Session = Depends(get_
 
             # Save evaluation
             evaluation = ComplianceEvaluation(
+                agent_id=agent_id,
                 memory_id=memory_id,
                 policy_id=policy.id,
                 is_compliant=is_compliant,
@@ -314,7 +345,7 @@ async def process_batch(request: ProcessBatchRequest, db: Session = Depends(get_
 
     # Refresh agent variants if requested
     if request.refresh_variants:
-        _compute_and_store_variants(db)
+        _compute_and_store_variants(db, agent_id=agent_id)
 
     return ProcessBatchResponse(
         processed=len([r for r in results if r.get("status") == "success"]),
@@ -323,16 +354,16 @@ async def process_batch(request: ProcessBatchRequest, db: Session = Depends(get_
     )
 
 
-@router.delete("/reset")
-async def reset_evaluations(db: Session = Depends(get_db)):
-    """Delete all compliance evaluations, agent variants, and session statuses."""
-    eval_count = db.query(ComplianceEvaluation).delete()
-    db.query(ToolTransition).delete()
-    variant_count = db.query(AgentVariant).delete()
-    session_status_count = db.query(SessionStatus).delete()
+@router.delete("/{agent_id}/reset")
+async def reset_evaluations(agent_id: str, db: Session = Depends(get_db)):
+    """Delete all compliance evaluations, agent variants, and session statuses for a specific agent."""
+    eval_count = db.query(ComplianceEvaluation).filter(ComplianceEvaluation.agent_id == agent_id).delete()
+    db.query(ToolTransition).filter(ToolTransition.agent_id == agent_id).delete()
+    variant_count = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).delete()
+    session_status_count = db.query(SessionStatus).filter(SessionStatus.agent_id == agent_id).delete()
     db.commit()
     return {
-        "message": "All evaluations reset",
+        "message": f"All evaluations reset for agent {agent_id}",
         "evaluations_deleted": eval_count,
         "variants_deleted": variant_count,
         "session_statuses_deleted": session_status_count

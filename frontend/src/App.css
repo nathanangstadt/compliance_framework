@@ -1538,3 +1538,160 @@ body {
   padding: 1rem 1.5rem;
   margin-bottom: 1rem;
 }
+
+/* Agent Selection Page */
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.agent-card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.agent-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  border-color: #5b9bd5;
+}
+
+.agent-card-header {
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--color-border-light);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.agent-card-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.25rem;
+  padding-right: 2rem;
+}
+
+.agent-id {
+  font-size: 0.75rem;
+  color: var(--color-text-muted);
+  font-family: 'Courier New', monospace;
+  background: var(--color-bg-secondary);
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.agent-card-body {
+  margin: 1.5rem 0;
+}
+
+.agent-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: var(--color-bg-secondary);
+  border-radius: 8px;
+}
+
+.stat-label {
+  font-size: 0.875rem;
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #5b9bd5;
+}
+
+.agent-card-header .icon-button {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.agent-card-footer {
+  margin-top: 1rem;
+}
+
+.agent-card-footer .btn {
+  width: 100%;
+  justify-content: center;
+}
+
+.dashboard-header {
+  text-align: center;
+  padding: 3rem 2rem 1rem;
+  background: linear-gradient(135deg, #5b9bd5 0%, #4a7fb8 100%);
+  color: white;
+  margin-bottom: 0;
+}
+
+.dashboard-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+  font-size: 1.125rem;
+  opacity: 0.9;
+  font-weight: 400;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 4rem 2rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.empty-state h3 {
+  font-size: 1.5rem;
+  color: var(--color-text-secondary);
+  margin-bottom: 1rem;
+}
+
+.empty-state p {
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+.empty-state code {
+  background: var(--color-bg-secondary);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+
+/* Alert banners */
+.alert {
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid;
+  line-height: 1.5;
+}
+
+.alert-warning {
+  background-color: var(--badge-warning-bg);
+  border-color: var(--color-warning);
+  color: var(--badge-warning-text);
+}
+
+.alert-warning a {
+  color: var(--badge-warning-text);
+  font-weight: 600;
+}

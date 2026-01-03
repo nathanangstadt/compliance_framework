@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { policyAPI, memoryAPI } from '../services/api';
 import CompositePolicyBuilder from '../components/CompositePolicyBuilder';
 import APIStatusBanner from '../components/APIStatusBanner';
@@ -7,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { useJob } from '../context/JobContext';
 
 function PoliciesPage() {
+  const { agentId } = useParams();
   const [policies, setPolicies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -18,13 +20,16 @@ function PoliciesPage() {
   const { jobStatus, isProcessing, submitJob } = useJob();
 
   useEffect(() => {
-    loadPolicies();
-  }, []);
+    if (agentId) {
+      loadPolicies();
+    }
+  }, [agentId]);
 
   const loadPolicies = async () => {
+    if (!agentId) return;
     try {
       setLoading(true);
-      const response = await policyAPI.list();
+      const response = await policyAPI.list(agentId);
       setPolicies(response.data);
     } catch (err) {
       setError(err.message);
@@ -52,7 +57,7 @@ function PoliciesPage() {
     setDeleteConfirm(null);
 
     try {
-      await policyAPI.delete(id);
+      await policyAPI.delete(agentId, id);
       toast.success('Policy deleted successfully');
       loadPolicies();
     } catch (err) {
@@ -63,7 +68,7 @@ function PoliciesPage() {
 
   const handleToggleEnabled = async (policy) => {
     try {
-      await policyAPI.update(policy.id, { enabled: !policy.enabled });
+      await policyAPI.update(agentId, policy.id, { enabled: !policy.enabled });
       loadPolicies();
     } catch (err) {
       setError(err.message);
@@ -74,11 +79,11 @@ function PoliciesPage() {
     try {
       if (editingPolicy) {
         // Update existing policy
-        await policyAPI.update(editingPolicy.id, policyData);
+        await policyAPI.update(agentId, editingPolicy.id, policyData);
         toast.success('Policy updated successfully');
       } else {
         // Create new policy
-        await policyAPI.create(policyData);
+        await policyAPI.create(agentId, policyData);
         toast.success('Policy created successfully');
       }
       setShowBuilder(false);
@@ -97,8 +102,8 @@ function PoliciesPage() {
     }
 
     try {
-      // Get all memories
-      const memoriesResponse = await memoryAPI.list();
+      // Get all memories for this agent
+      const memoriesResponse = await memoryAPI.list(agentId);
       const memories = memoriesResponse.data;
 
       if (memories.length === 0) {
@@ -111,7 +116,7 @@ function PoliciesPage() {
 
       // Submit async job with all memory IDs and this specific policy
       const memoryIds = memories.map(m => m.id);
-      await submitJob(memoryIds, [policyId]);
+      await submitJob(agentId, memoryIds, [policyId]);
 
       toast.success(`Started evaluation of "${policyName}" against ${memories.length} session(s)`);
     } catch (err) {

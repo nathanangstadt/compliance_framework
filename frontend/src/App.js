@@ -20,9 +20,11 @@ function NavbarContent() {
 
   // Sync with ComplianceReviewPage state
   useEffect(() => {
-    if (location.pathname.startsWith('/compliance/') && window.complianceReviewState) {
+    const complianceMatch = location.pathname.match(/^\/([^/]+)\/compliance\/(.+)$/);
+    if (complianceMatch && window.complianceReviewState) {
       setActiveTab(window.complianceReviewState.activeTab);
-      setReturnUrl(window.complianceReviewState.returnUrl || '/issues');
+      const agentId = complianceMatch[1];
+      setReturnUrl(window.complianceReviewState.returnUrl || `/${agentId}/issues`);
     }
   }, [location.pathname]);
 
@@ -33,19 +35,53 @@ function NavbarContent() {
   };
 
   const getNavbarContent = () => {
-    if (location.pathname === '/issues') {
+    // Agent-specific dashboard
+    const dashboardMatch = location.pathname.match(/^\/([^/]+)\/dashboard$/);
+    if (dashboardMatch) {
+      const agentId = dashboardMatch[1];
+      const agentName = agentId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
       return (
         <>
           <div className="navbar-left-with-back">
             <button
               className="back-arrow-button"
               onClick={() => navigate('/')}
+              title="Back to Agents"
+            >
+              &lt;
+            </button>
+            <div className="navbar-title-section">
+              <h1>{agentName}</h1>
+              <p className="navbar-description">Agent Dashboard</p>
+            </div>
+          </div>
+          <div className="navbar-right">
+            <span className="navbar-timestamp">
+              {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+            </span>
+          </div>
+        </>
+      );
+    }
+
+    // Agent-specific issues page
+    const issuesMatch = location.pathname.match(/^\/([^/]+)\/issues$/);
+    if (issuesMatch) {
+      const agentId = issuesMatch[1];
+      const agentName = agentId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+      return (
+        <>
+          <div className="navbar-left-with-back">
+            <button
+              className="back-arrow-button"
+              onClick={() => navigate(`/${agentId}/dashboard`)}
               title="Back to Dashboard"
             >
               &lt;
             </button>
             <div className="navbar-title-section">
-              <h1>Issues</h1>
+              <h1>Issues - {agentName}</h1>
               <p className="navbar-description">Session Evaluations</p>
             </div>
           </div>
@@ -56,8 +92,12 @@ function NavbarContent() {
           </div>
         </>
       );
-    } else if (location.pathname.startsWith('/compliance/')) {
-      // Compliance review page - from Issues
+    }
+
+    // Agent-specific compliance review page
+    const complianceMatch = location.pathname.match(/^\/([^/]+)\/compliance\/(.+)$/);
+    if (complianceMatch) {
+      const agentId = complianceMatch[1];
       return (
         <>
           <div className="navbar-left-with-back">
@@ -70,7 +110,7 @@ function NavbarContent() {
             </button>
             <div className="navbar-title-section" id="compliance-review-title">
               <h1>Compliance Review</h1>
-              <p className="navbar-description">Order Management Agent</p>
+              <p className="navbar-description">Session Detail</p>
             </div>
           </div>
           <div className="navbar-right">
@@ -106,21 +146,25 @@ function NavbarContent() {
           </div>
         </>
       );
-    } else if (location.pathname.startsWith('/memories/')) {
-      // Memory detail page - shows raw agent instance messages
+    }
+
+    // Agent-specific memory detail page
+    const memoryDetailMatch = location.pathname.match(/^\/([^/]+)\/memories\/(.+)$/);
+    if (memoryDetailMatch) {
+      const agentId = memoryDetailMatch[1];
       return (
         <>
           <div className="navbar-left-with-back">
             <button
               className="back-arrow-button"
-              onClick={() => navigate('/memories')}
+              onClick={() => navigate(`/${agentId}/memories`)}
               title="Back to Sessions"
             >
               &lt;
             </button>
             <div className="navbar-title-section" id="memory-detail-title">
               <h1>Session</h1>
-              <p className="navbar-description">Order Management Agent</p>
+              <p className="navbar-description">Session Detail</p>
             </div>
           </div>
           <div className="navbar-right">
@@ -130,20 +174,26 @@ function NavbarContent() {
           </div>
         </>
       );
-    } else if (location.pathname === '/policies') {
+    }
+
+    // Agent-specific policies page
+    const policiesMatch = location.pathname.match(/^\/([^/]+)\/policies$/);
+    if (policiesMatch) {
+      const agentId = policiesMatch[1];
+      const agentName = agentId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       return (
         <>
           <div className="navbar-left-with-back">
             <button
               className="back-arrow-button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate(`/${agentId}/dashboard`)}
               title="Back to Dashboard"
             >
               &lt;
             </button>
             <div className="navbar-title-section">
-              <h1>Policy Management</h1>
-              <p className="navbar-description">Define and manage compliance policies using the composite policy builder</p>
+              <h1>Policy Management - {agentName}</h1>
+              <p className="navbar-description">Define and manage compliance policies</p>
             </div>
           </div>
           <div className="navbar-right">
@@ -153,20 +203,26 @@ function NavbarContent() {
           </div>
         </>
       );
-    } else if (location.pathname === '/memories') {
+    }
+
+    // Agent-specific memories/sessions page
+    const memoriesMatch = location.pathname.match(/^\/([^/]+)\/memories$/);
+    if (memoriesMatch) {
+      const agentId = memoriesMatch[1];
+      const agentName = agentId.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       return (
         <>
           <div className="navbar-left-with-back">
             <button
               className="back-arrow-button"
-              onClick={() => navigate('/')}
+              onClick={() => navigate(`/${agentId}/dashboard`)}
               title="Back to Dashboard"
             >
               &lt;
             </button>
             <div className="navbar-title-section">
-              <h1>Sessions</h1>
-              <p className="navbar-description">Order Management Agent</p>
+              <h1>Sessions - {agentName}</h1>
+              <p className="navbar-description">Agent Sessions</p>
             </div>
           </div>
           <div className="navbar-right">
@@ -176,12 +232,15 @@ function NavbarContent() {
           </div>
         </>
       );
-    } else {
+    }
+
+    // Default: Agent list at root
+    else {
       return (
         <>
           <div className="navbar-left">
-            <h1>Order Management Agent</h1>
-            <p className="navbar-description">Ensures accurate order processing and inventory management</p>
+            <h1>Agent List</h1>
+            <p className="navbar-description">Select an agent to view compliance and policy management</p>
           </div>
           <div className="navbar-right">
             <ModeSelector />
@@ -207,6 +266,7 @@ function NavbarContent() {
 
 function AppContent() {
   const location = useLocation();
+  // Show sidebar only on root (/) for agent selection
   const showSidebar = location.pathname === '/';
 
   return (
@@ -217,11 +277,12 @@ function AppContent() {
       <div className={showSidebar ? "main-content" : "main-content-full"}>
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/memories" element={<MemoriesPage />} />
-          <Route path="/memories/:id" element={<MemoryDetailPage />} />
-          <Route path="/compliance/:id" element={<ComplianceReviewPage />} />
-          <Route path="/policies" element={<PoliciesPage />} />
-          <Route path="/issues" element={<IssuesPage />} />
+          <Route path="/:agentId/dashboard" element={<Dashboard />} />
+          <Route path="/:agentId/memories" element={<MemoriesPage />} />
+          <Route path="/:agentId/memories/:id" element={<MemoryDetailPage />} />
+          <Route path="/:agentId/compliance/:id" element={<ComplianceReviewPage />} />
+          <Route path="/:agentId/policies" element={<PoliciesPage />} />
+          <Route path="/:agentId/issues" element={<IssuesPage />} />
         </Routes>
       </div>
     </div>

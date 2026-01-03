@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float, Boolean, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime
@@ -10,6 +10,7 @@ class AgentMemory(Base):
     __tablename__ = "agent_memories"
 
     id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
     uploaded_at = Column(DateTime, default=datetime.utcnow)
     messages = Column(JSON, nullable=False)
@@ -20,6 +21,7 @@ class Policy(Base):
     __tablename__ = "policies"
 
     id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
     policy_type = Column(String, nullable=False)  # response_length, tool_call, tool_response, compound_tool, llm_eval
@@ -37,6 +39,7 @@ class ComplianceEvaluation(Base):
     __tablename__ = "compliance_evaluations"
 
     id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(String, nullable=False, index=True)
     memory_id = Column(String, nullable=False, index=True)  # File-based ID (filename without extension)
     policy_id = Column(Integer, ForeignKey("policies.id"), nullable=False)
     is_compliant = Column(Boolean, nullable=False)
@@ -49,9 +52,11 @@ class ComplianceEvaluation(Base):
 class AgentVariant(Base):
     """Represents a unique tool usage pattern identified across agent instances."""
     __tablename__ = "agent_variants"
+    __table_args__ = (UniqueConstraint('agent_id', 'signature', name='uq_agent_variant_signature'),)
 
     id = Column(Integer, primary_key=True, index=True)
-    signature = Column(String, unique=True, nullable=False, index=True)  # SHA256 hash for fast lookup
+    agent_id = Column(String, nullable=False, index=True)
+    signature = Column(String, nullable=False, index=True)  # SHA256 hash for fast lookup (unique per agent)
     name = Column(String, nullable=False)  # Auto-generated or user-assigned name
     normalized_sequence = Column(JSON, nullable=False)  # List of tool names (normalized, no cycles)
     sequence_display = Column(String, nullable=False)  # Human-readable: "tool_a → tool_b → tool_c"
@@ -68,6 +73,7 @@ class ToolTransition(Base):
     __tablename__ = "tool_transitions"
 
     id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(String, nullable=False, index=True)
     from_tool = Column(String, nullable=False, index=True)  # Source tool name (or "_start" for first tool)
     to_tool = Column(String, nullable=False, index=True)  # Target tool name (or "_end" for last tool)
     count = Column(Integer, default=0)  # Number of times this transition occurred
@@ -86,6 +92,7 @@ class SessionStatus(Base):
     __tablename__ = "session_status"
 
     session_id = Column(String, primary_key=True, index=True)  # Matches memory_id
+    agent_id = Column(String, nullable=False, index=True)
     compliance_status = Column(String, nullable=True)  # null | 'compliant' | 'issues' | 'resolved'
     resolved_at = Column(DateTime, nullable=True)
     resolved_by = Column(String, nullable=True)  # User who marked it resolved
@@ -104,6 +111,7 @@ class ProcessingJob(Base):
     __tablename__ = "processing_jobs"
 
     id = Column(String, primary_key=True, index=True)  # UUID
+    agent_id = Column(String, nullable=False, index=True)
     status = Column(String, nullable=False, default='pending')  # pending | running | completed | failed
     job_type = Column(String, nullable=False, default='batch_evaluate')  # batch_evaluate | single_evaluate
 

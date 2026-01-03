@@ -72,33 +72,37 @@ def _format_metadata(raw_metadata: Optional[Dict[str, Any]]) -> Optional[Dict[st
     return result
 
 
-@router.get("/")
-async def list_memories(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
+@router.get("/{agent_id}/")
+async def list_memories(agent_id: str, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """List all sessions from the filesystem with processing and compliance status."""
-    memories = memory_loader.list_memories()
+    memories = memory_loader.list_memories(agent_id=agent_id)
 
-    # Get enabled policies for status calculation
-    enabled_policies = db.query(Policy).filter(Policy.enabled == True).all()
+    # Get enabled policies for status calculation (filtered by agent)
+    enabled_policies = db.query(Policy).filter(
+        Policy.enabled == True,
+        Policy.agent_id == agent_id
+    ).all()
     enabled_policy_ids = {p.id for p in enabled_policies}
 
-    # Get all variants to check which memories are in variant patterns
-    variants = db.query(AgentVariant).all()
+    # Get all variants to check which memories are in variant patterns (filtered by agent)
+    variants = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).all()
     memories_in_variants = set()
     for v in variants:
         if v.memory_ids:
             memories_in_variants.update(v.memory_ids)
 
-    # Get all session statuses
-    session_statuses = {s.session_id: s for s in db.query(SessionStatus).all()}
+    # Get all session statuses (filtered by agent)
+    session_statuses = {s.session_id: s for s in db.query(SessionStatus).filter(SessionStatus.agent_id == agent_id).all()}
 
     # Format response with processing and compliance status
     result = []
     for m in memories:
         memory_id = m["id"]
 
-        # Check compliance evaluations for this memory
+        # Check compliance evaluations for this memory (filtered by agent)
         evals = db.query(ComplianceEvaluation).filter(
-            ComplianceEvaluation.memory_id == memory_id
+            ComplianceEvaluation.memory_id == memory_id,
+            ComplianceEvaluation.agent_id == agent_id
         ).all()
         evaluated_policy_ids = {e.policy_id for e in evals}
 
@@ -109,6 +113,11 @@ async def list_memories(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
         # Get session status from DB
         session_status = session_statuses.get(memory_id)
 
+        # A session is "processed" if it has been evaluated against at least one policy
+        # Partial processing means evaluated against some but not all enabled policies
+        is_processed = len(evaluated_policy_ids) > 0
+        is_fully_evaluated = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
+
         result.append({
             "id": memory_id,
             "name": m["name"],
@@ -117,7 +126,8 @@ async def list_memories(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
             "message_count": m["message_count"],
             "metadata": _format_metadata(m.get("metadata")),
             "processing_status": {
-                "is_processed": has_compliance and has_variants,
+                "is_processed": is_processed,  # Has been evaluated against at least one policy
+                "is_fully_evaluated": is_fully_evaluated,  # Evaluated against ALL enabled policies
                 "has_compliance": has_compliance,
                 "has_variants": has_variants,
                 "policies_evaluated": len(evaluated_policy_ids),
@@ -129,30 +139,42 @@ async def list_memories(db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     return result
 
 
-@router.get("/{memory_id}")
-async def get_memory(memory_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+@router.get("/{agent_id}/{memory_id}")
+async def get_memory(agent_id: str, memory_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Get a specific session by ID (filename without extension)."""
-    memory = memory_loader.get_memory(memory_id)
+    memory = memory_loader.get_memory(agent_id=agent_id, memory_id=memory_id)
     if not memory:
         raise HTTPException(status_code=404, detail="Session not found")
 
-    # Get enabled policies for status calculation
-    enabled_policies = db.query(Policy).filter(Policy.enabled == True).all()
+    # Get enabled policies for status calculation (filtered by agent)
+    enabled_policies = db.query(Policy).filter(
+        Policy.enabled == True,
+        Policy.agent_id == agent_id
+    ).all()
     enabled_policy_ids = {p.id for p in enabled_policies}
 
-    # Check compliance evaluations
+    # Check compliance evaluations (filtered by agent)
     evals = db.query(ComplianceEvaluation).filter(
-        ComplianceEvaluation.memory_id == memory_id
+        ComplianceEvaluation.memory_id == memory_id,
+        ComplianceEvaluation.agent_id == agent_id
     ).all()
     evaluated_policy_ids = {e.policy_id for e in evals}
     has_compliance = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
 
-    # Check variants
-    variants = db.query(AgentVariant).all()
+    # Check variants (filtered by agent)
+    variants = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).all()
     has_variants = any(memory_id in (v.memory_ids or []) for v in variants)
 
-    # Get session status
-    session_status = db.query(SessionStatus).filter(SessionStatus.session_id == memory_id).first()
+    # Get session status (filtered by agent)
+    session_status = db.query(SessionStatus).filter(
+        SessionStatus.session_id == memory_id,
+        SessionStatus.agent_id == agent_id
+    ).first()
+
+    # A session is "processed" if it has been evaluated against at least one policy
+    # Partial processing means evaluated against some but not all enabled policies
+    is_processed = len(evaluated_policy_ids) > 0
+    is_fully_evaluated = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
 
     return {
         "id": memory["id"],
@@ -162,7 +184,8 @@ async def get_memory(memory_id: str, db: Session = Depends(get_db)) -> Dict[str,
         "message_count": memory["message_count"],
         "metadata": _format_metadata(memory.get("metadata")),
         "processing_status": {
-            "is_processed": has_compliance and has_variants,
+            "is_processed": is_processed,  # Has been evaluated against at least one policy
+            "is_fully_evaluated": is_fully_evaluated,  # Evaluated against ALL enabled policies
             "has_compliance": has_compliance,
             "has_variants": has_variants,
             "policies_evaluated": len(evaluated_policy_ids),
@@ -172,20 +195,24 @@ async def get_memory(memory_id: str, db: Session = Depends(get_db)) -> Dict[str,
     }
 
 
-@router.post("/{memory_id}/resolve")
+@router.post("/{agent_id}/{memory_id}/resolve")
 async def resolve_session(
+    agent_id: str,
     memory_id: str,
     request: ResolveSessionRequest,
     db: Session = Depends(get_db)
 ) -> Dict[str, Any]:
     """Mark a session's compliance issues as resolved."""
     # Verify session exists
-    memory = memory_loader.get_memory(memory_id)
+    memory = memory_loader.get_memory(agent_id=agent_id, memory_id=memory_id)
     if not memory:
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Get or create session status
-    session_status = db.query(SessionStatus).filter(SessionStatus.session_id == memory_id).first()
+    session_status = db.query(SessionStatus).filter(
+        SessionStatus.session_id == memory_id,
+        SessionStatus.agent_id == agent_id
+    ).first()
 
     if session_status:
         session_status.compliance_status = "resolved"
@@ -194,6 +221,7 @@ async def resolve_session(
         session_status.resolution_notes = request.resolution_notes
     else:
         session_status = SessionStatus(
+            agent_id=agent_id,
             session_id=memory_id,
             compliance_status="resolved",
             resolved_at=datetime.utcnow(),
@@ -212,10 +240,13 @@ async def resolve_session(
     }
 
 
-@router.post("/{memory_id}/unresolve")
-async def unresolve_session(memory_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
+@router.post("/{agent_id}/{memory_id}/unresolve")
+async def unresolve_session(agent_id: str, memory_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
     """Remove resolved status from a session, returning it to issues state."""
-    session_status = db.query(SessionStatus).filter(SessionStatus.session_id == memory_id).first()
+    session_status = db.query(SessionStatus).filter(
+        SessionStatus.session_id == memory_id,
+        SessionStatus.agent_id == agent_id
+    ).first()
 
     if not session_status:
         raise HTTPException(status_code=404, detail="No resolved status found for this session")

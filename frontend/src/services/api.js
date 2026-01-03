@@ -11,8 +11,8 @@ const api = axios.create({
 
 // Session (Agent Memory) API
 export const memoryAPI = {
-  list: () => api.get('/api/memories/'),
-  get: (id) => api.get(`/api/memories/${id}`),
+  list: (agentId) => api.get(`/api/memories/${agentId}/`),
+  get: (agentId, id) => api.get(`/api/memories/${agentId}/${id}`),
   create: (data) => api.post('/api/memories', data),
   upload: (file) => {
     const formData = new FormData();
@@ -22,12 +22,12 @@ export const memoryAPI = {
     });
   },
   delete: (id) => api.delete(`/api/memories/${id}`),
-  resolve: (id, resolvedBy = null, notes = null) =>
-    api.post(`/api/memories/${id}/resolve`, {
+  resolve: (agentId, id, resolvedBy = null, notes = null) =>
+    api.post(`/api/memories/${agentId}/${id}/resolve`, {
       resolved_by: resolvedBy,
       resolution_notes: notes
     }),
-  unresolve: (id) => api.post(`/api/memories/${id}/unresolve`),
+  unresolve: (agentId, id) => api.post(`/api/memories/${agentId}/${id}/unresolve`),
 };
 
 // Alias for Session API (preferred terminology)
@@ -35,45 +35,53 @@ export const sessionAPI = memoryAPI;
 
 // Policy API
 export const policyAPI = {
-  list: () => api.get('/api/policies'),
-  get: (id) => api.get(`/api/policies/${id}`),
-  create: (data) => api.post('/api/policies', data),
-  update: (id, data) => api.put(`/api/policies/${id}`, data),
-  delete: (id) => api.delete(`/api/policies/${id}`),
+  list: (agentId) => api.get(`/api/policies/${agentId}/`),
+  get: (agentId, id) => api.get(`/api/policies/${agentId}/${id}`),
+  create: (agentId, data) => api.post(`/api/policies/${agentId}/`, data),
+  update: (agentId, id, data) => api.put(`/api/policies/${agentId}/${id}`, data),
+  delete: (agentId, id) => api.delete(`/api/policies/${agentId}/${id}`),
 };
 
 // Compliance API
 export const complianceAPI = {
-  evaluate: (memoryId, policyIds = null) =>
-    api.post('/api/compliance/evaluate', {
+  evaluate: (agentId, memoryId, policyIds = null) =>
+    api.post(`/api/compliance/${agentId}/evaluate`, {
       memory_id: memoryId,
       policy_ids: policyIds
     }),
-  getSummary: () => api.get('/api/compliance/summary'),
-  getMemoryEvaluations: (memoryId) => api.get(`/api/compliance/memory/${memoryId}`),
-  processBatch: (memoryIds, refreshVariants = true) =>
-    api.post('/api/compliance/process-batch', {
+  getSummary: (agentId) => api.get(`/api/compliance/${agentId}/summary`),
+  getMemoryEvaluations: (agentId, memoryId) => api.get(`/api/compliance/${agentId}/memory/${memoryId}`),
+  processBatch: (agentId, memoryIds, refreshVariants = true) =>
+    api.post(`/api/compliance/${agentId}/process-batch`, {
       memory_ids: memoryIds,
       refresh_variants: refreshVariants
     }),
-  reset: () => api.delete('/api/compliance/reset'),
+  reset: (agentId) => api.delete(`/api/compliance/${agentId}/reset`),
 };
 
 // Agent Variants API
 export const agentVariantsAPI = {
-  list: (refresh = false) => api.get('/api/agent-variants/', { params: { refresh } }),
-  get: (id) => api.get(`/api/agent-variants/${id}`),
-  getTransitions: (variantId = null) => {
+  list: (agentId, refresh = false) => api.get(`/api/agent-variants/${agentId}/`, { params: { refresh } }),
+  get: (agentId, id) => api.get(`/api/agent-variants/${agentId}/${id}`),
+  getTransitions: (agentId, variantId = null) => {
     const params = variantId ? { variant_id: variantId } : {};
-    return api.get('/api/agent-variants/transitions/', { params });
+    return api.get(`/api/agent-variants/${agentId}/transitions`, { params });
   },
-  refresh: () => api.post('/api/agent-variants/refresh/'),
+  refresh: (agentId) => api.post(`/api/agent-variants/${agentId}/refresh`),
+};
+
+// Agents API
+export const agentsAPI = {
+  list: () => api.get('/api/agents/'),
+  get: (agentId) => api.get(`/api/agents/${agentId}`),
+  delete: (agentId) => api.delete(`/api/agents/${agentId}`),
 };
 
 // Jobs API (Async Processing)
 export const jobsAPI = {
-  submit: (memoryIds, policyIds = null, refreshVariants = true) =>
+  submit: (agentId, memoryIds, policyIds = null, refreshVariants = true) =>
     api.post('/api/jobs/submit', {
+      agent_id: agentId,
       memory_ids: memoryIds,
       policy_ids: policyIds,
       refresh_variants: refreshVariants

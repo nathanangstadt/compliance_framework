@@ -27,8 +27,8 @@ services:
       - "127.0.0.1:8000:8000"
     volumes:
       - ./backend:/app
+      - ./agent_data:/agent_data
       - ./sample_memories:/sample_memories
-      - agent_memories:/app/data
     env_file:
       - ./backend/.env
     environment:

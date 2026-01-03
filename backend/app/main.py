@@ -4,7 +4,7 @@ load_dotenv()  # Load .env file before any other imports that might need env var
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import init_db
-from app.routes import memories, policies, compliance, test, agent_variants, jobs
+from app.routes import memories, policies, compliance, test, agent_variants, jobs, agents
 
 app = FastAPI(title="Policy Compliance Framework")
 
@@ -23,6 +23,7 @@ async def startup_event():
     init_db()
 
 # Include routers
+app.include_router(agents.router)
 app.include_router(memories.router)
 app.include_router(policies.router)
 app.include_router(compliance.router)

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { memoryAPI, complianceAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import { useJob } from '../context/JobContext';
@@ -8,14 +8,29 @@ import ProcessingProgress from '../components/ProcessingProgress';
 function StatusBadge({ status }) {
   if (!status) return <span className="status-badge unprocessed">Unprocessed</span>;
 
-  if (status.is_processed) {
+  // Processed but missing evaluations for new policies
+  if (status.is_processed && !status.is_fully_evaluated) {
+    return (
+      <span
+        className="status-badge partial"
+        title={`Evaluated against ${status.policies_evaluated} of ${status.policies_total} policies`}
+      >
+        Needs Re-processing
+      </span>
+    );
+  }
+
+  // Fully processed
+  if (status.is_processed && status.is_fully_evaluated) {
     return <span className="status-badge processed">Processed</span>;
   }
 
+  // Never processed
   return <span className="status-badge unprocessed">Unprocessed</span>;
 }
 
 function MemoriesPage() {
+  const { agentId } = useParams();
   const [memories, setMemories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -28,8 +43,10 @@ function MemoriesPage() {
   const { jobStatus, isProcessing, submitJob } = useJob();
 
   useEffect(() => {
-    loadMemories();
-  }, []);
+    if (agentId) {
+      loadMemories();
+    }
+  }, [agentId]);
 
   // Listen for job completion events (from global context)
   useEffect(() => {
@@ -42,9 +59,10 @@ function MemoriesPage() {
   }, []);
 
   const loadMemories = async () => {
+    if (!agentId) return;
     try {
       setLoading(true);
-      const response = await memoryAPI.list();
+      const response = await memoryAPI.list(agentId);
       setMemories(response.data);
     } catch (err) {
       setError(err.message);
@@ -56,7 +74,8 @@ function MemoriesPage() {
   // Filter memories based on tab
   const filteredMemories = memories.filter(m => {
     if (filter === 'all') return true;
-    if (filter === 'processed') return m.processing_status?.is_processed;
+    if (filter === 'processed') return m.processing_status?.is_processed && m.processing_status?.is_fully_evaluated;
+    if (filter === 'needs-reprocessing') return m.processing_status?.is_processed && !m.processing_status?.is_fully_evaluated;
     if (filter === 'unprocessed') return !m.processing_status?.is_processed;
     return true;
   });
@@ -64,7 +83,8 @@ function MemoriesPage() {
   // Counts for tabs
   const counts = {
     all: memories.length,
-    processed: memories.filter(m => m.processing_status?.is_processed).length,
+    processed: memories.filter(m => m.processing_status?.is_processed && m.processing_status?.is_fully_evaluated).length,
+    needsReprocessing: memories.filter(m => m.processing_status?.is_processed && !m.processing_status?.is_fully_evaluated).length,
     unprocessed: memories.filter(m => !m.processing_status?.is_processed).length,
   };
 
@@ -100,7 +120,7 @@ function MemoriesPage() {
     }
 
     try {
-      await submitJob(idsToProcess);
+      await submitJob(agentId, idsToProcess);
       setSelectedIds(new Set());
     } catch (err) {
       toast.error(`Processing failed: ${err.message}`, 'Error');
@@ -109,7 +129,7 @@ function MemoriesPage() {
 
   const handleProcessSingle = async (memoryId) => {
     try {
-      await complianceAPI.processBatch([memoryId]);
+      await complianceAPI.processBatch(agentId, [memoryId]);
       toast.success('Successfully processed session', 'Complete');
       await loadMemories();
     } catch (err) {
@@ -120,7 +140,7 @@ function MemoriesPage() {
   const handleReset = async () => {
     try {
       setResetting(true);
-      const response = await complianceAPI.reset();
+      const response = await complianceAPI.reset(agentId);
       toast.success(response.data.message || 'All evaluations reset', 'Reset Complete');
       setShowResetDialog(false);
       await loadMemories();
@@ -185,6 +205,12 @@ function MemoriesPage() {
           Unprocessed ({counts.unprocessed})
         </button>
         <button
+          className={`filter-tab ${filter === 'needs-reprocessing' ? 'active' : ''}`}
+          onClick={() => setFilter('needs-reprocessing')}
+        >
+          Needs Re-processing ({counts.needsReprocessing})
+        </button>
+        <button
           className={`filter-tab ${filter === 'processed' ? 'active' : ''}`}
           onClick={() => setFilter('processed')}
         >
@@ -245,7 +271,7 @@ function MemoriesPage() {
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
                       <button
                         className="icon-button"
-                        onClick={() => navigate(`/memories/${memory.id}`, { state: { from: '/memories' } })}
+                        onClick={() => navigate(`/${agentId}/memories/${memory.id}`, { state: { from: `/${agentId}/memories` } })}
                         title="View details"
                       >
                         🔍

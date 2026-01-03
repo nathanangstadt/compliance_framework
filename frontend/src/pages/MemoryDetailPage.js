@@ -5,16 +5,17 @@ import MessageList from '../components/MessageList';
 import './MemoryDetailPage.css';
 
 function MemoryDetailPage() {
-  const { id } = useParams();
+  const { agentId, id } = useParams();
   const [memory, setMemory] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!agentId || !id) return;
     const loadData = async () => {
       try {
         setLoading(true);
-        const response = await memoryAPI.get(id);
+        const response = await memoryAPI.get(agentId, id);
         setMemory(response.data);
       } catch (err) {
         setError(err.message);
@@ -24,7 +25,7 @@ function MemoryDetailPage() {
     };
 
     loadData();
-  }, [id]);
+  }, [agentId, id]);
 
   // Update navbar title when memory is loaded
   useEffect(() => {

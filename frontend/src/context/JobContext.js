@@ -70,11 +70,11 @@ export function JobProvider({ children }) {
     };
   }, [activeJobId, toast]);
 
-  const submitJob = useCallback(async (memoryIds, policyIds = null, refreshVariants = true) => {
+  const submitJob = useCallback(async (agentId, memoryIds, policyIds = null, refreshVariants = true) => {
     try {
       setIsProcessing(true);
       setJobStatus(null);
-      const response = await jobsAPI.submit(memoryIds, policyIds, refreshVariants);
+      const response = await jobsAPI.submit(agentId, memoryIds, policyIds, refreshVariants);
       setActiveJobId(response.data.job_id);
       return response.data;
     } catch (err) {

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams } from 'react-router-dom';
 import { complianceAPI, memoryAPI } from '../services/api';
 import { useToast } from '../components/Toast';
 import PolicyTooltip from '../components/PolicyTooltip';
 
 function IssuesPage() {
+  const { agentId } = useParams();
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -40,13 +41,16 @@ function IssuesPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    loadSummary();
-  }, []);
+    if (agentId) {
+      loadSummary();
+    }
+  }, [agentId]);
 
   const loadSummary = async () => {
+    if (!agentId) return;
     try {
       setLoading(true);
-      const response = await complianceAPI.getSummary();
+      const response = await complianceAPI.getSummary(agentId);
       setSummary(response.data);
     } catch (err) {
       setError(err.message);
@@ -58,7 +62,7 @@ function IssuesPage() {
   const handleResolve = async (memoryId) => {
     try {
       setResolvingId(memoryId);
-      await memoryAPI.resolve(memoryId);
+      await memoryAPI.resolve(agentId, memoryId);
       toast.success('Session marked as resolved', 'Resolved');
       await loadSummary();
     } catch (err) {
@@ -71,7 +75,7 @@ function IssuesPage() {
   const handleUnresolve = async (memoryId) => {
     try {
       setResolvingId(memoryId);
-      await memoryAPI.unresolve(memoryId);
+      await memoryAPI.unresolve(agentId, memoryId);
       toast.success('Session resolution removed', 'Unresolved');
       await loadSummary();
     } catch (err) {
@@ -201,8 +205,19 @@ function IssuesPage() {
     return `${filterPolicyId}`;
   };
 
+  // Calculate partially evaluated sessions count
+  const partiallyEvaluatedCount = summary.all_memories ? summary.all_memories.filter(m => m.is_fully_evaluated === false).length : 0;
+
   return (
     <div className="issues-page">
+      {/* Warning banner for partially evaluated sessions */}
+      {partiallyEvaluatedCount > 0 && (
+        <div className="alert alert-warning" style={{ marginBottom: '1rem' }}>
+          <strong>⚠ Partial Evaluation Warning:</strong> {partiallyEvaluatedCount} session{partiallyEvaluatedCount !== 1 ? 's have' : ' has'} been evaluated against some but not all policies.
+          {' '}Go to the <a href={`/${agentId}/memories`} style={{ textDecoration: 'underline' }}>Sessions page</a> and click "Process All Unprocessed" to evaluate all sessions against all enabled policies.
+        </div>
+      )}
+
       {/* Filter controls */}
       <div className="filter-controls">
         <label className="filter-control-label">Filter by policy:</label>
@@ -314,11 +329,22 @@ function IssuesPage() {
                   <tr key={memory.memory_id}>
                     <td>{memory.memory_name.replace(/\.json$/, '')}</td>
                     <td>
-                      <PolicyTooltip policies={allPolicies}>
-                        <span className={`badge ${badgeClass}`}>
-                          {statusText}
-                        </span>
-                      </PolicyTooltip>
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                        <PolicyTooltip policies={allPolicies}>
+                          <span className={`badge ${badgeClass}`}>
+                            {statusText}
+                          </span>
+                        </PolicyTooltip>
+                        {memory.is_fully_evaluated === false && (
+                          <span
+                            className="badge badge-warning"
+                            style={{ fontSize: '0.75rem' }}
+                            title={`Evaluated against ${memory.evaluated_policy_count} of ${memory.total_policy_count} policies. Re-process to evaluate all policies.`}
+                          >
+                            ⚠ Partial ({memory.evaluated_policy_count}/{memory.total_policy_count})
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -331,9 +357,9 @@ function IssuesPage() {
                             if (filterPolicyId) params.set('policy', filterPolicyId.toString());
                             if (filterPolicyStatus) params.set('policyStatus', filterPolicyStatus);
 
-                            const returnUrl = `/issues?${params.toString()}`;
+                            const returnUrl = `/${agentId}/issues?${params.toString()}`;
 
-                            navigate(`/compliance/${memory.memory_id}`, {
+                            navigate(`/${agentId}/compliance/${memory.memory_id}`, {
                               state: {
                                 navigationList: filteredMemories.map(m => m.memory_id),
                                 returnUrl: returnUrl
