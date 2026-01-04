@@ -5,6 +5,7 @@
 ### 🔄 Composite-only policy clean-up and test fixes (by Codex)
 
 - Removed unused legacy policy editors and deprecated session upload APIs from the frontend to enforce composite-only policies.
+- Simplified Policies UI to show composite violation logic only (removed legacy type badges).
 - Tightened backend schemas to accept only `policy_type: "composite"` and clarified policy model intent.
 - Added pytest to backend dependencies plus sample memory fixtures (`sample_memories/backoffice_with_rejection.json`, `backoffice_with_approval.json`) so CI/local tests pass in Docker.
 - Updated README/.env.example to emphasize Docker-only workflows and default Postgres usage.

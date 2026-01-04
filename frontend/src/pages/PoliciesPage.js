@@ -132,28 +132,13 @@ function PoliciesPage() {
     }
   }, [isProcessing, evaluatingPolicyId]);
 
-  const getPolicyTypeBadge = (type, config) => {
-    if (type === 'composite') {
-      const logicType = config?.violation_logic?.type || 'UNKNOWN';
-
-      // Show just the logic type for cleaner, more scalable display
-      return (
-        <span className="badge badge-primary" style={{ fontSize: '0.85rem' }}>
-          {logicType}
-        </span>
-      );
-    }
-
-    // Legacy types (will show error when evaluated)
-    const types = {
-      response_length: { label: 'Response Length (Legacy)', class: 'badge-warning' },
-      tool_call: { label: 'Tool Call (Legacy)', class: 'badge-warning' },
-      tool_response: { label: 'Tool Response (Legacy)', class: 'badge-warning' },
-      compound_tool: { label: 'Compound Tool (Legacy)', class: 'badge-warning' },
-      llm_eval: { label: 'LLM Evaluation (Legacy)', class: 'badge-warning' },
-    };
-    const typeInfo = types[type] || { label: type, class: 'badge-secondary' };
-    return <span className={`badge ${typeInfo.class}`}>{typeInfo.label}</span>;
+  const getLogicBadge = (config) => {
+    const logicType = config?.violation_logic?.type || 'UNKNOWN';
+    return (
+      <span className="badge badge-primary" style={{ fontSize: '0.85rem' }}>
+        {logicType}
+      </span>
+    );
   };
 
   const getSeverityBadge = (severity) => {
@@ -208,7 +193,7 @@ function PoliciesPage() {
             <thead>
               <tr>
                 <th>Name</th>
-                <th>Type</th>
+                <th>Logic</th>
                 <th>Severity</th>
                 <th>Description</th>
                 <th>Status</th>
@@ -219,7 +204,7 @@ function PoliciesPage() {
               {policies.map((policy) => (
                 <tr key={policy.id}>
                   <td><strong>{policy.name}</strong></td>
-                  <td>{getPolicyTypeBadge(policy.policy_type, policy.config)}</td>
+                  <td>{getLogicBadge(policy.config)}</td>
                   <td>{getSeverityBadge(policy.severity)}</td>
                   <td>{policy.description || '-'}</td>
                   <td>
