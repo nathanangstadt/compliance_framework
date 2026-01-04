@@ -1616,12 +1616,6 @@ body {
   color: #5b9bd5;
 }
 
-.agent-card-header .icon-button {
-  position: absolute;
-  top: 0;
-  right: 0;
-}
-
 .agent-card-footer {
   margin-top: 1rem;
 }

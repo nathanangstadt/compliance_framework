@@ -242,7 +242,7 @@ function NavbarContent() {
             <h1>Agent List</h1>
             <p className="navbar-description">Select an agent to view compliance and policy management</p>
           </div>
-          <div className="navbar-right">
+          <div className="navbar-right" style={{ flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
             <ModeSelector />
             <span className="navbar-timestamp">
               {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}

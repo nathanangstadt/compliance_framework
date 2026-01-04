@@ -295,3 +295,41 @@ class SubmitJobResponse(BaseModel):
     status: str
     total_items: int
     message: str
+
+
+# Agent Generation Schemas
+class CreateAgentRequest(BaseModel):
+    """Request to create a new agent with LLM-generated configuration."""
+    agent_name: str = Field(..., min_length=1, max_length=100, description="Human-readable agent name")
+    description: str = Field(..., min_length=10, description="Natural language description of agent's workflow/use case")
+    tools: Optional[str] = Field(None, description="'Auto-generate' or comma-separated tool names")
+    business_identifiers: Optional[str] = Field(None, description="Natural language description of business identifiers")
+    ensure_tools: Optional[List[str]] = Field(None, description="Tool names that must be included in generated list")
+    generate_policies: bool = Field(default=False, description="Whether to generate suggested policies for this agent")
+    llm_provider: str = Field(default="anthropic", description="LLM provider: 'anthropic' or 'openai'")
+    model: str = Field(default="claude-sonnet-4-5-20250929", description="Model identifier")
+
+
+class AgentConfigResponse(BaseModel):
+    """LLM-generated agent configuration."""
+    use_case: str = Field(..., description="Structured description of agent's purpose")
+    tools: List[Dict[str, str]] = Field(..., description="List of tool objects with name and description")
+    business_identifiers: Dict[str, str] = Field(..., description="Business identifier fields and descriptions")
+
+
+class CreateAgentResponse(BaseModel):
+    """Response after creating an agent."""
+    agent_id: str = Field(..., description="Unique agent identifier (sanitized from agent_name)")
+    agent_name: str = Field(..., description="Human-readable agent name")
+    path: str = Field(..., description="Filesystem path to agent directory")
+    config: AgentConfigResponse = Field(..., description="LLM-generated agent configuration")
+    policies_created: int = Field(default=0, description="Number of policies generated (if generate_policies was True)")
+
+
+class GenerateSessionsRequest(BaseModel):
+    """Request to generate simulated sessions for an agent."""
+    num_sessions: int = Field(..., ge=1, le=100, description="Number of sessions to generate (1-100)")
+    scenario_variations: Optional[str] = Field(None, description="Comma-separated scenario descriptions")
+    include_edge_cases: bool = Field(default=True, description="Include error scenarios and edge cases")
+    llm_provider: Optional[str] = Field(None, description="Override agent's default LLM provider")
+    model: Optional[str] = Field(None, description="Override agent's default model")

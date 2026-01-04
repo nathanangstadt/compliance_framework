@@ -75,6 +75,8 @@ export const agentsAPI = {
   list: () => api.get('/api/agents/'),
   get: (agentId) => api.get(`/api/agents/${agentId}`),
   delete: (agentId) => api.delete(`/api/agents/${agentId}`),
+  create: (data) => api.post('/api/agents/', data),
+  generateSessions: (agentId, data) => api.post(`/api/agents/${agentId}/generate-sessions`, data),
 };
 
 // Jobs API (Async Processing)

@@ -3,6 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { complianceAPI, memoryAPI, agentVariantsAPI, agentsAPI } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { useToast } from '../components/Toast';
+import CreateAgentModal from '../components/CreateAgentModal';
+import GenerateSessionsModal from '../components/GenerateSessionsModal';
 
 function Dashboard() {
   const { agentId } = useParams();
@@ -20,6 +22,9 @@ function Dashboard() {
   const [agents, setAgents] = useState([]);
   const [deletingAgent, setDeletingAgent] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showCreateAgentModal, setShowCreateAgentModal] = useState(false);
+  const [showGenerateSessionsModal, setShowGenerateSessionsModal] = useState(false);
+  const [selectedAgentForGeneration, setSelectedAgentForGeneration] = useState(null);
 
   const navigate = useNavigate();
   const toast = useToast();
@@ -199,6 +204,17 @@ function Dashboard() {
 
     return (
       <div className="dashboard">
+        {/* Create Agent Button */}
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem' }}>
+          <button
+            className="btn btn-primary"
+            onClick={() => setShowCreateAgentModal(true)}
+            style={{ padding: '0.75rem 1.5rem', fontSize: '0.938rem', fontWeight: 600 }}
+          >
+            + Create New Agent
+          </button>
+        </div>
+
         <div className="agent-grid">
           {agents.map(agent => (
             <div
@@ -207,16 +223,32 @@ function Dashboard() {
               onClick={() => navigate(`/${agent.id}/dashboard`)}
             >
               <div className="agent-card-header">
-                <h2>{agent.name}</h2>
-                <span className="agent-id">{agent.id}</span>
-                <button
-                  className="icon-button"
-                  onClick={(e) => openDeleteDialog(e, agent)}
-                  title="Delete agent"
-                  style={{ marginLeft: 'auto' }}
-                >
-                  🗑️
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <div>
+                    <h2 style={{ marginBottom: '0.25rem' }}>{agent.name}</h2>
+                    <span className="agent-id">{agent.id}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button
+                      className="icon-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAgentForGeneration(agent);
+                        setShowGenerateSessionsModal(true);
+                      }}
+                      title="Generate sessions"
+                    >
+                      ✨
+                    </button>
+                    <button
+                      className="icon-button"
+                      onClick={(e) => openDeleteDialog(e, agent)}
+                      title="Delete agent"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
               </div>
               <div className="agent-card-body">
                 <div className="agent-stat">
@@ -225,7 +257,7 @@ function Dashboard() {
                 </div>
               </div>
               <div className="agent-card-footer">
-                <button className="btn btn-primary">
+                <button className="btn btn-primary" style={{ width: '100%' }}>
                   View Dashboard →
                 </button>
               </div>
@@ -280,6 +312,30 @@ function Dashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Create Agent Modal */}
+        {showCreateAgentModal && (
+          <CreateAgentModal
+            onClose={() => setShowCreateAgentModal(false)}
+            onSuccess={() => loadAgents()}
+          />
+        )}
+
+        {/* Generate Sessions Modal */}
+        {showGenerateSessionsModal && selectedAgentForGeneration && (
+          <GenerateSessionsModal
+            agentId={selectedAgentForGeneration.id}
+            agentName={selectedAgentForGeneration.name}
+            onClose={() => {
+              setShowGenerateSessionsModal(false);
+              setSelectedAgentForGeneration(null);
+            }}
+            onJobSubmitted={(jobId) => {
+              console.log('Session generation job started:', jobId);
+              // Job progress tracking handled by GlobalJobContext
+            }}
+          />
         )}
       </div>
     );

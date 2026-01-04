@@ -73,7 +73,8 @@ class MemoryLoader:
         for agent_dir in sorted(self.base_dir.iterdir()):
             if agent_dir.is_dir():
                 agent_id = agent_dir.name
-                sessions = list(agent_dir.glob("*.json"))
+                # Count session files, excluding .agent_metadata.json
+                sessions = [f for f in agent_dir.glob("*.json") if f.name != ".agent_metadata.json"]
 
                 agents.append({
                     "id": agent_id,
@@ -167,6 +168,10 @@ class MemoryLoader:
             return memories
 
         for file_path in sorted(agent_dir.glob("*.json")):
+            # Skip agent metadata file
+            if file_path.name == ".agent_metadata.json":
+                continue
+
             try:
                 # Use filename (without extension) as the ID
                 memory_id = file_path.stem
