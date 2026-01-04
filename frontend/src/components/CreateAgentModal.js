@@ -144,8 +144,7 @@ function CreateAgentModal({ onClose, onSuccess }) {
                 value={formData.llm_provider}
                 onChange={(e) => setFormData({
                   ...formData,
-                  llm_provider: e.target.value,
-                  model: e.target.value === 'anthropic' ? 'claude-sonnet-4-5-20250929' : 'gpt-4o'
+                  llm_provider: e.target.value
                 })}
               >
                 <option value="anthropic">Anthropic</option>
@@ -155,23 +154,15 @@ function CreateAgentModal({ onClose, onSuccess }) {
 
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 600 }}>Model</label>
-              <select
+              <input
+                type="text"
                 value={formData.model}
                 onChange={(e) => setFormData({...formData, model: e.target.value})}
-              >
-                {formData.llm_provider === 'anthropic' ? (
-                  <>
-                    <option value="claude-sonnet-4-5-20250929">Claude Sonnet 4.5</option>
-                    <option value="claude-opus-4-20250514">Claude Opus 4</option>
-                    <option value="claude-haiku-3-5-20241022">Claude Haiku 3.5</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="gpt-4o">GPT-4o</option>
-                    <option value="gpt-4o-mini">GPT-4o Mini</option>
-                  </>
-                )}
-              </select>
+                placeholder={formData.llm_provider === 'anthropic' ? 'claude-sonnet-4-5-20250929' : 'gpt-4o'}
+              />
+              <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.813rem', display: 'block', marginTop: '0.25rem' }}>
+                Same format as policy LLM config (free text). Set any valid model for the chosen provider.
+              </small>
             </div>
           </div>
 

@@ -283,21 +283,7 @@ Both scripts create the same 4 policies:
 
 ## Development
 
-### Running without Docker
-
-**Backend:**
-```bash
-cd backend
-pip install -r requirements.txt
-uvicorn app.main:app --reload
-```
-
-**Frontend:**
-```bash
-cd frontend
-npm install
-npm start
-```
+This project is intended to run inside Docker via `docker-compose up --build`. Host-only execution is not supported; the browser is the only thing that should run on the host.
 
 ### Adding New Policy Types
 

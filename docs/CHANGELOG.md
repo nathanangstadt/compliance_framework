@@ -1,5 +1,17 @@
 # Compliance Framework Changelog
 
+## 2026-01-04 - Codex Updates
+
+### 🔄 Composite-only policy clean-up and test fixes (by Codex)
+
+- Removed unused legacy policy editors and deprecated session upload APIs from the frontend to enforce composite-only policies.
+- Tightened backend schemas to accept only `policy_type: "composite"` and clarified policy model intent.
+- Added pytest to backend dependencies plus sample memory fixtures (`sample_memories/backoffice_with_rejection.json`, `backoffice_with_approval.json`) so CI/local tests pass in Docker.
+- Updated README/.env.example to emphasize Docker-only workflows and default Postgres usage.
+- Aligned agent creation LLM model input with policy UX (free-text model entry).
+
+Files touched include backend schemas/requirements, frontend policy/editor components, API client, create-agent modal, README, env example, and new sample memories.
+
 ## 2025-12-30 - Major Updates
 
 ### 📏 Enhanced Response Length Check Messages

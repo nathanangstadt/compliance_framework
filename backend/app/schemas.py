@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Literal
 from datetime import datetime
 
 
@@ -21,40 +21,10 @@ class AgentMemoryResponse(BaseModel):
         from_attributes = True
 
 
-# Policy Schemas
-class PolicyConfig(BaseModel):
-    pass
-
-
-class ResponseLengthPolicyConfig(PolicyConfig):
-    max_tokens: int
-
-
-class ToolCallPolicyConfig(PolicyConfig):
-    tool_name: str
-    parameters: Optional[Dict[str, Any]] = None
-
-
-class ToolResponsePolicyConfig(PolicyConfig):
-    tool_name: str
-    expect_success: bool = True
-
-
-class CompoundToolPolicyConfig(PolicyConfig):
-    conditions: List[Dict[str, Any]]  # List of tool conditions to check
-
-
-class LLMEvalPolicyConfig(PolicyConfig):
-    evaluation_prompt: str
-    message_filter: Optional[Dict[str, Any]] = None  # Filter to select messages
-    llm_provider: str = "anthropic"  # anthropic or openai
-    model: str = "claude-sonnet-4-5-20250929"
-
-
 class PolicyCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    policy_type: str  # response_length, tool_call, tool_response, compound_tool, llm_eval
+    policy_type: Literal["composite"] = "composite"
     config: Dict[str, Any]
     enabled: bool = True
     severity: str = 'error'  # 'error', 'warning', 'info'

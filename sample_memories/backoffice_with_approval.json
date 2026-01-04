@@ -1,0 +1,73 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Create an invoice for $2,500 for ACME and route for approval."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Creating the invoice now and will request approval."
+        },
+        {
+          "type": "tool_use",
+          "id": "tool-1",
+          "name": "create_invoice",
+          "input": {
+            "total": 2500,
+            "customer_id": "ACME-1001"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "tool-1",
+          "content": "{\"status\": \"created\", \"invoice_id\": \"INV-2002\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Requesting human approval for the invoice."
+        },
+        {
+          "type": "tool_use",
+          "id": "tool-2",
+          "name": "request_human_approval",
+          "input": {
+            "invoice_id": "INV-2002",
+            "amount": 2500
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "tool-2",
+          "content": "{\"status\": \"approved\", \"reason\": \"Manager OK\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Approval received; proceeding to finalize the invoice."
+        }
+      ]
+    }
+  ]
+}

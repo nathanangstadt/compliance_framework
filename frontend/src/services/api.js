@@ -13,15 +13,6 @@ const api = axios.create({
 export const memoryAPI = {
   list: (agentId) => api.get(`/api/memories/${agentId}/`),
   get: (agentId, id) => api.get(`/api/memories/${agentId}/${id}`),
-  create: (data) => api.post('/api/memories', data),
-  upload: (file) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    return api.post('/api/memories/upload', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-  delete: (id) => api.delete(`/api/memories/${id}`),
   resolve: (agentId, id, resolvedBy = null, notes = null) =>
     api.post(`/api/memories/${agentId}/${id}/resolve`, {
       resolved_by: resolvedBy,

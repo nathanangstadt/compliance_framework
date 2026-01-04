@@ -1,0 +1,73 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "Create an invoice for $1,500 for ACME."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Creating the invoice now."
+        },
+        {
+          "type": "tool_use",
+          "id": "tool-1",
+          "name": "create_invoice",
+          "input": {
+            "total": 1500,
+            "customer_id": "ACME-1001"
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "tool-1",
+          "content": "{\"status\": \"created\", \"invoice_id\": \"INV-1001\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Requesting human approval for this high-value invoice."
+        },
+        {
+          "type": "tool_use",
+          "id": "tool-2",
+          "name": "request_human_approval",
+          "input": {
+            "invoice_id": "INV-1001",
+            "amount": 1500
+          }
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "tool-2",
+          "content": "{\"status\": \"rejected\", \"reason\": \"Insufficient documentation\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Approval was rejected; I'll pause processing and ask for the missing documents."
+        }
+      ]
+    }
+  ]
+}

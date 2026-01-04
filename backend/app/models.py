@@ -24,7 +24,7 @@ class Policy(Base):
     agent_id = Column(String, nullable=False, index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
-    policy_type = Column(String, nullable=False)  # response_length, tool_call, tool_response, compound_tool, llm_eval
+    policy_type = Column(String, nullable=False)  # currently always 'composite'
     config = Column(JSON, nullable=False)
     enabled = Column(Boolean, default=True)
     severity = Column(String, default='error')  # 'error', 'warning', 'info'
