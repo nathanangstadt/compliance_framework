@@ -18,6 +18,18 @@ from app.routes.agent_variants import _compute_and_store_variants
 router = APIRouter(prefix="/api/compliance", tags=["compliance"])
 
 
+def _latest_evaluations_by_policy(evaluations):
+    """Return latest evaluation per policy_id keyed by policy_id."""
+    latest = {}
+    for ev in evaluations:
+        existing = latest.get(ev.policy_id)
+        if not existing or (ev.evaluated_at and existing.evaluated_at and ev.evaluated_at > existing.evaluated_at):
+            latest[ev.policy_id] = ev
+        elif not existing:
+            latest[ev.policy_id] = ev
+    return latest
+
+
 @router.post("/{agent_id}/evaluate", response_model=List[ComplianceEvaluationResponse])
 async def evaluate_memory(agent_id: str, request: EvaluateMemoryRequest, db: Session = Depends(get_db)):
     """Evaluate an agent memory against policies."""
@@ -124,8 +136,15 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
             ComplianceEvaluation.memory_id == memory_id,
             ComplianceEvaluation.agent_id == agent_id
         ).all()
-        evaluated_policy_ids = {e.policy_id for e in evals}
-        if enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids):
+        latest_by_policy = _latest_evaluations_by_policy(evals)
+        evaluated_policy_ids = set(latest_by_policy.keys())
+        stale = False
+        for policy in policies:
+            ev = latest_by_policy.get(policy.id)
+            if ev and policy.updated_at and ev.evaluated_at and policy.updated_at > ev.evaluated_at:
+                stale = True
+                break
+        if enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids) and not stale:
             processed_memory_ids.add(memory_id)
 
     compliance_by_policy = {}
@@ -180,8 +199,15 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
             continue
 
         # Check if fully evaluated
-        evaluated_policy_ids = {e.policy_id for e in memory_evals}
-        is_fully_evaluated = enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids)
+        latest_by_policy = _latest_evaluations_by_policy(memory_evals)
+        evaluated_policy_ids = set(latest_by_policy.keys())
+        stale = False
+        for policy in policies:
+            ev = latest_by_policy.get(policy.id)
+            if ev and policy.updated_at and ev.evaluated_at and policy.updated_at > ev.evaluated_at:
+                stale = True
+                break
+        is_fully_evaluated = enabled_policy_ids and enabled_policy_ids.issubset(evaluated_policy_ids) and not stale
 
         # Calculate compliance status
         total_evals = len(memory_evals)
@@ -230,6 +256,7 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
             "is_compliant": non_compliant_evals == 0,
             "compliance_status": compliance_status,
             "is_fully_evaluated": is_fully_evaluated,
+            "needs_reprocessing": stale,
             "evaluated_policy_count": len(evaluated_policy_ids),
             "total_policy_count": len(enabled_policy_ids),
             "resolved_at": session_status.resolved_at.isoformat() if is_resolved and session_status.resolved_at else None,

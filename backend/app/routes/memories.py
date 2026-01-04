@@ -72,6 +72,20 @@ def _format_metadata(raw_metadata: Optional[Dict[str, Any]]) -> Optional[Dict[st
     return result
 
 
+def _evaluation_stale(enabled_policies: List[Policy], evaluations: List[ComplianceEvaluation]) -> bool:
+    """
+    Returns True if any enabled policy was updated after the last evaluation for that policy.
+    """
+    eval_map = {e.policy_id: e for e in evaluations}
+    for policy in enabled_policies:
+        ev = eval_map.get(policy.id)
+        if not ev:
+            continue  # handled elsewhere as not fully evaluated
+        if policy.updated_at and ev.evaluated_at and policy.updated_at > ev.evaluated_at:
+            return True
+    return False
+
+
 @router.get("/{agent_id}/")
 async def list_memories(agent_id: str, db: Session = Depends(get_db)) -> List[Dict[str, Any]]:
     """List all sessions from the filesystem with processing and compliance status."""
@@ -106,8 +120,12 @@ async def list_memories(agent_id: str, db: Session = Depends(get_db)) -> List[Di
         ).all()
         evaluated_policy_ids = {e.policy_id for e in evals}
 
-        # Determine if fully evaluated (all enabled policies)
-        has_compliance = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
+        # Determine staleness (policy updated after evaluation)
+        stale = _evaluation_stale(enabled_policies, evals) if evals else False
+
+        # Determine if fully evaluated (all enabled policies) and fresh
+        all_policies_evaluated = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
+        has_compliance = all_policies_evaluated and not stale
         has_variants = memory_id in memories_in_variants
 
         # Get session status from DB
@@ -116,7 +134,7 @@ async def list_memories(agent_id: str, db: Session = Depends(get_db)) -> List[Di
         # A session is "processed" if it has been evaluated against at least one policy
         # Partial processing means evaluated against some but not all enabled policies
         is_processed = len(evaluated_policy_ids) > 0
-        is_fully_evaluated = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
+        is_fully_evaluated = all_policies_evaluated and not stale
 
         result.append({
             "id": memory_id,
@@ -127,7 +145,8 @@ async def list_memories(agent_id: str, db: Session = Depends(get_db)) -> List[Di
             "metadata": _format_metadata(m.get("metadata")),
             "processing_status": {
                 "is_processed": is_processed,  # Has been evaluated against at least one policy
-                "is_fully_evaluated": is_fully_evaluated,  # Evaluated against ALL enabled policies
+                "is_fully_evaluated": is_fully_evaluated,  # Evaluated against ALL enabled policies and not stale
+                "needs_reprocessing": stale,
                 "has_compliance": has_compliance,
                 "has_variants": has_variants,
                 "policies_evaluated": len(evaluated_policy_ids),
@@ -159,7 +178,8 @@ async def get_memory(agent_id: str, memory_id: str, db: Session = Depends(get_db
         ComplianceEvaluation.agent_id == agent_id
     ).all()
     evaluated_policy_ids = {e.policy_id for e in evals}
-    has_compliance = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
+    stale = _evaluation_stale(enabled_policies, evals) if evals else False
+    has_compliance = enabled_policy_ids.issubset(evaluated_policy_ids) and not stale if enabled_policy_ids else False
 
     # Check variants (filtered by agent)
     variants = db.query(AgentVariant).filter(AgentVariant.agent_id == agent_id).all()
@@ -174,7 +194,7 @@ async def get_memory(agent_id: str, memory_id: str, db: Session = Depends(get_db
     # A session is "processed" if it has been evaluated against at least one policy
     # Partial processing means evaluated against some but not all enabled policies
     is_processed = len(evaluated_policy_ids) > 0
-    is_fully_evaluated = enabled_policy_ids.issubset(evaluated_policy_ids) if enabled_policy_ids else False
+    is_fully_evaluated = enabled_policy_ids.issubset(evaluated_policy_ids) and not stale if enabled_policy_ids else False
 
     return {
         "id": memory["id"],
@@ -183,13 +203,14 @@ async def get_memory(agent_id: str, memory_id: str, db: Session = Depends(get_db
         "messages": memory["messages"],
         "message_count": memory["message_count"],
         "metadata": _format_metadata(memory.get("metadata")),
-        "processing_status": {
-            "is_processed": is_processed,  # Has been evaluated against at least one policy
-            "is_fully_evaluated": is_fully_evaluated,  # Evaluated against ALL enabled policies
-            "has_compliance": has_compliance,
-            "has_variants": has_variants,
-            "policies_evaluated": len(evaluated_policy_ids),
-            "policies_total": len(enabled_policy_ids)
+            "processing_status": {
+                "is_processed": is_processed,  # Has been evaluated against at least one policy
+                "is_fully_evaluated": is_fully_evaluated,  # Evaluated against ALL enabled policies and not stale
+                "needs_reprocessing": stale,
+                "has_compliance": has_compliance,
+                "has_variants": has_variants,
+                "policies_evaluated": len(evaluated_policy_ids),
+                "policies_total": len(enabled_policy_ids)
         },
         "compliance_status": _compute_compliance_status(db, memory_id, has_compliance, session_status)
     }

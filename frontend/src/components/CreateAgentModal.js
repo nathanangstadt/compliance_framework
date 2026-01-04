@@ -24,6 +24,22 @@ function CreateAgentModal({ onClose, onSuccess }) {
       return;
     }
 
+    // Validate LLM provider/model
+    if (!formData.llm_provider || !formData.model) {
+      toast.error('Please select an LLM provider and model', 'Validation Error');
+      return;
+    }
+
+    // Optional: warn if model seems mismatched to provider
+    const provider = formData.llm_provider;
+    const model = formData.model.trim();
+    const mismatch =
+      (provider === 'anthropic' && model && !model.startsWith('claude')) ||
+      (provider === 'openai' && model && !model.startsWith('gpt'));
+    if (mismatch) {
+      toast.info(`Model "${model}" may not match provider "${provider}". Please confirm.`, 'Check model name');
+    }
+
     setLoading(true);
 
     try {
@@ -150,6 +166,9 @@ function CreateAgentModal({ onClose, onSuccess }) {
                 <option value="anthropic">Anthropic</option>
                 <option value="openai">OpenAI</option>
               </select>
+              <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.813rem', display: 'block', marginTop: '0.25rem' }}>
+                Anthropic models (e.g., claude-sonnet-4-5-20250929); OpenAI models (e.g., gpt-4o, gpt-4o-mini).
+              </small>
             </div>
 
             <div className="form-group" style={{ marginBottom: 0 }}>
