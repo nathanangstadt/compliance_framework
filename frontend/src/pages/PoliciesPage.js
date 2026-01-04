@@ -218,7 +218,7 @@ function PoliciesPage() {
                         className="icon-button"
                         onClick={() => handleEvaluatePolicy(policy.id, policy.name)}
                         disabled={isProcessing}
-                        title="Evaluate this policy against all sessions"
+                        title="Evaluate this policy across all sessions (background job)"
                       >
                         {evaluatingPolicyId === policy.id ? '↻' : '▶️'}
                       </button>
