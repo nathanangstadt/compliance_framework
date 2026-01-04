@@ -108,11 +108,12 @@ function MemoriesPage() {
     }
   };
 
-  // Single handler for the process button - processes selected if any, otherwise all unprocessed
+  // Single handler for the process button - processes selected if any, otherwise all pending (unprocessed or needs reprocessing)
   const handleProcess = async () => {
+    const pendingMemories = memories.filter(m => !m.processing_status?.is_fully_evaluated);
     const idsToProcess = selectedIds.size > 0
       ? [...selectedIds]
-      : memories.filter(m => !m.processing_status?.is_processed).map(m => m.id);
+      : pendingMemories.map(m => m.id);
 
     if (idsToProcess.length === 0) {
       toast.info('All sessions are already processed', 'Info');
@@ -155,15 +156,16 @@ function MemoriesPage() {
 
   // Determine button label based on selection state
   const getProcessButtonLabel = () => {
+    const pending = counts.unprocessed + counts.needsReprocessing;
     if (isProcessing) return 'Processing...';
     if (selectedIds.size > 0) return `Process Selected (${selectedIds.size})`;
-    return `Process All Unprocessed (${counts.unprocessed})`;
+    return pending > 0 ? `Process All Pending (${pending})` : 'Process';
   };
 
   return (
     <div className="memories-page">
       <div className="page-header-actions">
-        {(counts.unprocessed > 0 || selectedIds.size > 0) && (
+        {(counts.unprocessed > 0 || counts.needsReprocessing > 0 || selectedIds.size > 0) && (
           <button
             className="btn btn-primary"
             onClick={handleProcess}
