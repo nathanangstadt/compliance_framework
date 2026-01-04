@@ -93,6 +93,7 @@ class ComplianceSummary(BaseModel):
     compliance_by_policy: Dict[int, Dict[str, Any]]  # policy_id -> {name, compliant_count, total_count}
     non_compliant_memories: List[Dict[str, Any]]
     all_memories: List[Dict[str, Any]]  # Only processed memories with compliance status
+    llm_usage_totals: Optional[Dict[str, Any]] = None
 
 
 # Agent Variant Schemas

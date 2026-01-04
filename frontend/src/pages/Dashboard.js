@@ -379,6 +379,19 @@ function Dashboard() {
 
   const compliantCount = summary.all_memories ? summary.all_memories.filter(m => m.is_compliant).length : 0;
   const nonCompliantCount = summary.all_memories ? summary.all_memories.filter(m => !m.is_compliant).length : 0;
+  const llmTotals = summary.llm_usage_totals || {
+    total_calls: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    total_tokens: 0,
+    cost_usd: 0
+  };
+
+  const formatCost = (value) => {
+    if (value === null || value === undefined) return '$0.00';
+    if (value < 0.01) return `$${value.toFixed(4)}`;
+    return `$${value.toFixed(2)}`;
+  };
 
   // Generate simulated session activity data (7 days x 6 time slots)
   const generateSessionActivity = () => {
@@ -504,6 +517,16 @@ function Dashboard() {
           <div className="metric-item">
             <span className={`metric-value ${nonCompliantCount > 0 ? 'non-compliant' : 'compliant'}`}>{nonCompliantCount}</span>
             <span className="metric-label">Non-Compliant</span>
+          </div>
+          <div className="metric-divider"></div>
+          <div className="metric-item">
+            <span className="metric-value">{llmTotals.total_calls}</span>
+            <span className="metric-label">LLM Calls</span>
+          </div>
+          <div className="metric-divider"></div>
+          <div className="metric-item">
+            <span className="metric-value">{formatCost(llmTotals.cost_usd)}</span>
+            <span className="metric-label">LLM Cost (est)</span>
           </div>
         </div>
         <button className="btn btn-primary" onClick={() => navigate(`/${agentId}/memories`)}>

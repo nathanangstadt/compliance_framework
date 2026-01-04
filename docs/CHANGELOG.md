@@ -10,6 +10,7 @@
 - Added pytest to backend dependencies plus sample memory fixtures (`sample_memories/backoffice_with_rejection.json`, `backoffice_with_approval.json`) so CI/local tests pass in Docker.
 - Updated README/.env.example to emphasize Docker-only workflows and default Postgres usage.
 - Aligned agent creation LLM model input with policy UX (free-text model entry).
+- Added LLM usage aggregation in compliance summary plus dashboard LLM call/cost metrics; sessions now flag stale evaluations when policies update.
 
 Files touched include backend schemas/requirements, frontend policy/editor components, API client, create-agent modal, README, env example, and new sample memories.
 

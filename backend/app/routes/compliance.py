@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
+from copy import deepcopy
 
 from app.database import get_db
 from app.models import Policy, ComplianceEvaluation, AgentVariant, ToolTransition, SessionStatus
@@ -28,6 +29,24 @@ def _latest_evaluations_by_policy(evaluations):
         elif not existing:
             latest[ev.policy_id] = ev
     return latest
+
+
+def _collect_llm_usage(data):
+    """Recursively collect llm_usage dicts from violations/compliance details."""
+    usages = []
+
+    def walk(node):
+        if isinstance(node, dict):
+            if 'llm_usage' in node and isinstance(node['llm_usage'], dict):
+                usages.append(node['llm_usage'])
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for item in node:
+                walk(item)
+
+    walk(deepcopy(data))
+    return usages
 
 
 @router.post("/{agent_id}/evaluate", response_model=List[ComplianceEvaluationResponse])
@@ -187,6 +206,13 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
 
     # Get compliance status for all memories (both fully and partially evaluated)
     all_memories_data = []
+    llm_usage_totals = {
+        "total_calls": 0,
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "cost_usd": 0.0
+    }
 
     for memory in memories:
         memory_evals = db.query(ComplianceEvaluation).filter(
@@ -238,6 +264,17 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
                         "severity": policy.severity
                     })
 
+            # Accumulate LLM usage from latest evaluation only to avoid double counting
+            latest_ev = latest_by_policy.get(policy.id)
+            if latest_ev:
+                usages = _collect_llm_usage(latest_ev.violations)
+                for usage in usages:
+                    llm_usage_totals["total_calls"] += 1
+                    llm_usage_totals["input_tokens"] += usage.get("input_tokens", 0)
+                    llm_usage_totals["output_tokens"] += usage.get("output_tokens", 0)
+                    llm_usage_totals["total_tokens"] += usage.get("total_tokens", 0)
+                    llm_usage_totals["cost_usd"] += usage.get("cost_usd", 0.0)
+
         # Check for resolved status
         session_status = session_statuses.get(memory["id"])
         is_resolved = session_status and session_status.compliance_status == 'resolved'
@@ -278,7 +315,8 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
         total_policies=total_policies,
         compliance_by_policy=compliance_by_policy,
         non_compliant_memories=non_compliant_memories,
-        all_memories=all_memories_data
+        all_memories=all_memories_data,
+        llm_usage_totals=llm_usage_totals
     )
 
 
