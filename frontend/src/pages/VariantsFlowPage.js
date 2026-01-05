@@ -33,6 +33,24 @@ function VariantsFlowPage() {
     const nodes = Array.from(toolSet).map(name => ({ name: name === '_start' ? 'Start' : name === '_end' ? 'End' : name }));
     const nameToIndex = Object.fromEntries(nodes.map((n, idx) => [n.name === 'Start' ? '_start' : n.name === 'End' ? '_end' : n.name, idx]));
 
+    const hasPath = (from, to, links) => {
+      const adj = {};
+      links.forEach(l => {
+        if (!adj[l.source]) adj[l.source] = [];
+        adj[l.source].push(l.target);
+      });
+      const stack = [from];
+      const seen = new Set();
+      while (stack.length) {
+        const cur = stack.pop();
+        if (cur === to) return true;
+        if (seen.has(cur)) continue;
+        seen.add(cur);
+        (adj[cur] || []).forEach(n => stack.push(n));
+      }
+      return false;
+    };
+
     const links = [];
     const seen = new Set();
 
@@ -45,6 +63,8 @@ function VariantsFlowPage() {
       const target = nameToIndex[t.to_tool];
       if (source === undefined || target === undefined) return;
       const key = `${source}-${target}`;
+      // Avoid cycles that break Recharts Sankey
+      if (hasPath(target, source, links)) return;
       if (seen.has(key)) {
         // accumulate
         const existing = links.find(l => l.source === source && l.target === target);
