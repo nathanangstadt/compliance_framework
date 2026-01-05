@@ -66,6 +66,34 @@ function NavbarContent() {
       );
     }
 
+    // Agent-specific variant flow page
+    const variantsFlowMatch = location.pathname.match(/^\/([^/]+)\/variants-flow$/);
+    if (variantsFlowMatch) {
+      const agentId = variantsFlowMatch[1];
+      return (
+        <>
+          <div className="navbar-left-with-back">
+            <button
+              className="back-arrow-button"
+              onClick={() => navigate(`/${agentId}/dashboard`)}
+              title="Back to Dashboard"
+            >
+              &lt;
+            </button>
+            <div className="navbar-title-section">
+              <h1>Agent Variant Flows</h1>
+              <p className="navbar-description">Aggregated tool flow across all sessions</p>
+            </div>
+          </div>
+          <div className="navbar-right">
+            <span className="navbar-timestamp">
+              {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
+            </span>
+          </div>
+        </>
+      );
+    }
+
     // Agent-specific issues page
     const issuesMatch = location.pathname.match(/^\/([^/]+)\/issues$/);
     if (issuesMatch) {
