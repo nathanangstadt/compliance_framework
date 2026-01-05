@@ -88,6 +88,7 @@ function Dashboard({ mode = 'observability' }) {
 
       if (processedMemories.length === 0) {
         setToolUsageData([]);
+        setSessionActivity(buildSessionActivity([]));
         return;
       }
 
@@ -114,13 +115,13 @@ function Dashboard({ mode = 'observability' }) {
 
       setToolUsageData(toolData);
 
-      // Build session activity heatmap based on timestamps
-      const activity = buildSessionActivity(memories);
+      // Build session activity heatmap based on timestamps of processed sessions
+      const activity = buildSessionActivity(processedMemories);
       setSessionActivity(activity);
     } catch (err) {
       console.error('Error fetching tool usage:', err);
       setToolUsageData([]);
-      setSessionActivity([]);
+      setSessionActivity(buildSessionActivity([]));
     } finally {
       setToolUsageLoading(false);
     }
@@ -183,7 +184,7 @@ function Dashboard({ mode = 'observability' }) {
         if (!agentId) {
           loadAgents();
         } else {
-          loadAllData();
+          loadAllData(agentId);
         }
       }
     };
@@ -193,7 +194,7 @@ function Dashboard({ mode = 'observability' }) {
       if (!agentId) {
         loadAgents();
       } else {
-        loadAllData();
+        loadAllData(agentId);
       }
     };
 
