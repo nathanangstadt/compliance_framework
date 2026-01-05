@@ -6,11 +6,14 @@ import { useToast } from '../components/Toast';
 import CreateAgentModal from '../components/CreateAgentModal';
 import GenerateSessionsModal from '../components/GenerateSessionsModal';
 
-const TIME_SLOTS = Array.from({ length: 24 }).map((_, hour) => {
-  const suffix = hour < 12 ? 'AM' : 'PM';
-  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-  return { label: `${displayHour} ${suffix}`, start: hour, end: hour };
-});
+const TIME_SLOTS = [
+  { label: '12 AM', start: 0, end: 3 },
+  { label: '4 AM', start: 4, end: 7 },
+  { label: '8 AM', start: 8, end: 11 },
+  { label: '12 PM', start: 12, end: 15 },
+  { label: '4 PM', start: 16, end: 19 },
+  { label: '8 PM', start: 20, end: 23 },
+];
 
 function buildSessionActivity(memories) {
   const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
