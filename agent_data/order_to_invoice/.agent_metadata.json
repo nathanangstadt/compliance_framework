@@ -1,0 +1,17 @@
+{
+  "agent_id": "order_to_invoice",
+  "agent_name": "Order To Invoice",
+  "description": "Automates the end-to-end flow from sales order capture through invoicing, approvals, and reconciliation, ensuring high-value orders follow the correct review steps and billing stays accurate.",
+  "use_case": "Ingest orders from multiple channels, validate customer/account status, check inventory, apply pricing and discounts, route high-value orders for approval, generate invoices, and sync status back to ERP/CRM systems.",
+  "tools": [],
+  "business_identifiers": {
+    "order_id": "Unique order identifier",
+    "customer_id": "Customer account identifier",
+    "invoice_id": "Invoice reference number"
+  },
+  "llm_config": {
+    "provider": "anthropic",
+    "model": "claude-sonnet-4-5-20250929"
+  },
+  "created_at": "2026-01-04T00:00:00Z"
+}
