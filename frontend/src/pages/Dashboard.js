@@ -17,23 +17,23 @@ const TIME_SLOTS = [
 
 function buildSessionActivity(memories) {
   const timestamps = memories
-    .map(m => m.metadata?.timestamp)
-    .filter(Boolean)
-    .map(ts => new Date(ts));
+    .map(m => ({ ts: m.metadata?.timestamp, id: m.id }))
+    .filter(m => !!m.ts)
+    .map(m => ({ date: new Date(m.ts), id: m.id }));
 
   if (!timestamps.length) {
     // No timestamps, return empty grid
     const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     return TIME_SLOTS.map(slot => {
       const row = { time: slot.label };
-      days.forEach(d => row[d] = 0);
+      days.forEach(d => row[d] = { count: 0, ids: [] });
       return row;
     });
   }
 
   // Oldest session determines the week window (start of that day)
-  const oldest = timestamps.reduce((min, ts) => ts < min ? ts : min, timestamps[0]);
-  const weekStart = new Date(oldest);
+  const oldest = timestamps.reduce((min, entry) => entry.date < min.date ? entry : min, timestamps[0]);
+  const weekStart = new Date(oldest.date);
   weekStart.setUTCHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
@@ -47,7 +47,7 @@ function buildSessionActivity(memories) {
   // Initialize grid
   const grid = TIME_SLOTS.map(slot => {
     const row = { time: slot.label };
-    days.forEach(d => row[d] = 0);
+    days.forEach(d => row[d] = { count: 0, ids: [] });
     return row;
   });
 
@@ -61,12 +61,16 @@ function buildSessionActivity(memories) {
   };
 
   // Count sessions within the week window
-  timestamps.forEach(ts => {
+  timestamps.forEach(entry => {
+    const ts = entry.date;
     if (ts < weekStart || ts >= weekEnd) return;
     const dayIndex = Math.floor((ts - weekStart) / (24 * 60 * 60 * 1000));
     const dayLabel = days[dayIndex];
     const slotIndex = findSlot(ts.getUTCHours());
-    grid[slotIndex][dayLabel] = (grid[slotIndex][dayLabel] || 0) + 1;
+    const cell = grid[slotIndex][dayLabel] || { count: 0, ids: [] };
+    cell.count += 1;
+    cell.ids = [...cell.ids, entry.id];
+    grid[slotIndex][dayLabel] = cell;
   });
 
   return grid;
@@ -517,7 +521,8 @@ function Dashboard({ mode = 'observability' }) {
   };
 
   // Get activity level color for heatmap
-  const getActivityColor = (value) => {
+  const getActivityColor = (cell) => {
+    const value = cell?.count || 0;
     if (value === 0) return '#f0f0f0';
     if (value < 5) return '#d4e5f1';
     if (value < 10) return '#a8cbe3';
@@ -530,9 +535,20 @@ function Dashboard({ mode = 'observability' }) {
   const getMaxSessions = () => {
     let max = 0;
     sessionActivity.forEach(row => {
-      if (row.Wed > max) max = row.Wed;
+      ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].forEach(day => {
+        const count = row[day]?.count || 0;
+        if (count > max) max = count;
+      });
     });
     return max;
+  };
+
+  const handleActivityClick = (dayLabel, row) => {
+    const cell = row[dayLabel];
+    if (!cell || !cell.count || !cell.ids || cell.ids.length === 0) return;
+    const params = new URLSearchParams();
+    params.set('memories', cell.ids.join(','));
+    navigate(`/${agentId}/issues?${params.toString()}`);
   };
 
   const maxSessions = getMaxSessions();
@@ -749,26 +765,54 @@ function Dashboard({ mode = 'observability' }) {
                   {sessionActivity.map((row, idx) => (
                     <tr key={idx}>
                       <td className="time-label">{row.time}</td>
-                      <td style={{ backgroundColor: getActivityColor(row.Mon) }}>
-                        {row.Mon > 0 ? row.Mon : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Mon) }}
+                        onClick={() => handleActivityClick('Mon', row)}
+                        className={row.Mon?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Mon?.count > 0 ? row.Mon.count : ''}
                       </td>
-                      <td style={{ backgroundColor: getActivityColor(row.Tue) }}>
-                        {row.Tue > 0 ? row.Tue : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Tue) }}
+                        onClick={() => handleActivityClick('Tue', row)}
+                        className={row.Tue?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Tue?.count > 0 ? row.Tue.count : ''}
                       </td>
-                      <td style={{ backgroundColor: getActivityColor(row.Wed) }}>
-                        {row.Wed > 0 ? row.Wed : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Wed) }}
+                        onClick={() => handleActivityClick('Wed', row)}
+                        className={row.Wed?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Wed?.count > 0 ? row.Wed.count : ''}
                       </td>
-                      <td style={{ backgroundColor: getActivityColor(row.Thu) }}>
-                        {row.Thu > 0 ? row.Thu : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Thu) }}
+                        onClick={() => handleActivityClick('Thu', row)}
+                        className={row.Thu?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Thu?.count > 0 ? row.Thu.count : ''}
                       </td>
-                      <td style={{ backgroundColor: getActivityColor(row.Fri) }}>
-                        {row.Fri > 0 ? row.Fri : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Fri) }}
+                        onClick={() => handleActivityClick('Fri', row)}
+                        className={row.Fri?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Fri?.count > 0 ? row.Fri.count : ''}
                       </td>
-                      <td style={{ backgroundColor: getActivityColor(row.Sat) }}>
-                        {row.Sat > 0 ? row.Sat : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Sat) }}
+                        onClick={() => handleActivityClick('Sat', row)}
+                        className={row.Sat?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Sat?.count > 0 ? row.Sat.count : ''}
                       </td>
-                      <td style={{ backgroundColor: getActivityColor(row.Sun) }}>
-                        {row.Sun > 0 ? row.Sun : ''}
+                      <td
+                        style={{ backgroundColor: getActivityColor(row.Sun) }}
+                        onClick={() => handleActivityClick('Sun', row)}
+                        className={row.Sun?.count ? 'heatmap-cell clickable' : 'heatmap-cell'}
+                      >
+                        {row.Sun?.count > 0 ? row.Sun.count : ''}
                       </td>
                     </tr>
                   ))}

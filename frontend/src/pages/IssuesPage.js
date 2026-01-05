@@ -12,6 +12,7 @@ function IssuesPage() {
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterPolicyId, setFilterPolicyId] = useState(null);
   const [filterPolicyStatus, setFilterPolicyStatus] = useState(null); // 'violated' or 'passed'
+  const [filterMemoryIds, setFilterMemoryIds] = useState([]);
   const [resolvingId, setResolvingId] = useState(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -22,6 +23,7 @@ function IssuesPage() {
     const policyId = searchParams.get('policy');
     const status = searchParams.get('status');
     const policyStatus = searchParams.get('policyStatus'); // 'violated' or 'passed'
+    const memoriesParam = searchParams.get('memories');
 
     if (policyId) {
       setFilterPolicyId(parseInt(policyId, 10));
@@ -37,6 +39,13 @@ function IssuesPage() {
       setFilterPolicyStatus(policyStatus);
     } else {
       setFilterPolicyStatus(null);
+    }
+
+    if (memoriesParam) {
+      const ids = memoriesParam.split(',').map(id => id.trim()).filter(Boolean);
+      setFilterMemoryIds(ids);
+    } else {
+      setFilterMemoryIds([]);
     }
   }, [searchParams]);
 
@@ -86,7 +95,7 @@ function IssuesPage() {
   };
 
   // Update URL params when filters change
-  const updateFilters = (newStatus, newPolicyId, newPolicyStatus) => {
+  const updateFilters = (newStatus, newPolicyId, newPolicyStatus, newMemoryIds = []) => {
     const params = new URLSearchParams();
     // Always include status in URL, even if 'all'
     if (newStatus) {
@@ -98,10 +107,14 @@ function IssuesPage() {
     if (newPolicyStatus) {
       params.set('policyStatus', newPolicyStatus);
     }
+    if (newMemoryIds && newMemoryIds.length > 0) {
+      params.set('memories', newMemoryIds.join(','));
+    }
     setSearchParams(params);
     setFilterStatus(newStatus || 'all');
     setFilterPolicyId(newPolicyId);
     setFilterPolicyStatus(newPolicyStatus);
+    setFilterMemoryIds(newMemoryIds || []);
   };
 
   const handleStatusChange = (status) => {
@@ -131,6 +144,7 @@ function IssuesPage() {
 
   // Filter based on compliance_status AND policy
   const filteredMemories = summary.all_memories ? summary.all_memories.filter(memory => {
+    if (filterMemoryIds.length > 0 && !filterMemoryIds.includes(memory.memory_id)) return false;
     // Status filter
     if (filterStatus === 'compliant' && memory.compliance_status !== 'compliant') return false;
     if (filterStatus === 'issues' && memory.compliance_status !== 'issues') return false;
