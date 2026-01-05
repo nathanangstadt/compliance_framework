@@ -36,6 +36,30 @@ class AgentResponse(BaseModel):
     name: str
     session_count: int
     path: str
+    description: str | None = None
+    use_case: str | None = None
+    llm_provider: str | None = None
+    llm_model: str | None = None
+
+
+def _load_agent_metadata(agent_id: str):
+    """Load agent metadata from .agent_metadata.json if present."""
+    agent_dir = Path(memory_loader.base_dir) / agent_id
+    metadata_file = agent_dir / ".agent_metadata.json"
+    if not metadata_file.exists():
+        return {}
+    try:
+        with open(metadata_file, "r") as f:
+            data = json.load(f)
+        llm_config = data.get("llm_config", {}) if isinstance(data, dict) else {}
+        return {
+            "description": data.get("description"),
+            "use_case": data.get("use_case"),
+            "llm_provider": llm_config.get("provider"),
+            "llm_model": llm_config.get("model"),
+        }
+    except Exception:
+        return {}
 
 
 @router.get("/", response_model=List[AgentResponse])
@@ -46,7 +70,11 @@ def list_agents():
     Returns agents discovered from subdirectories in agent_data/.
     """
     agents = memory_loader.list_agents()
-    return agents
+    enriched = []
+    for agent in agents:
+        meta = _load_agent_metadata(agent["id"])
+        enriched.append({**agent, **meta})
+    return enriched
 
 
 @router.get("/{agent_id}", response_model=AgentResponse)
@@ -66,7 +94,9 @@ def get_agent(agent_id: str):
     if not agent:
         raise HTTPException(status_code=404, detail=f"Agent '{agent_id}' not found")
 
-    return agent
+    # Enrich with metadata
+    meta = _load_agent_metadata(agent_id)
+    return {**agent, **meta}
 
 
 @router.delete("/{agent_id}")

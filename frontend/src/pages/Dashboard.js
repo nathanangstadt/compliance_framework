@@ -255,6 +255,11 @@ function Dashboard() {
                   <span className="stat-label">Sessions</span>
                   <span className="stat-value">{agent.session_count}</span>
                 </div>
+                {agent.use_case && (
+                  <div className="agent-description-snippet" style={{ marginTop: '0.5rem', color: '#6c757d', fontSize: '0.875rem', lineHeight: 1.4 }}>
+                    {agent.use_case.slice(0, 120)}{agent.use_case.length > 120 ? '…' : ''}
+                  </div>
+                )}
               </div>
               <div className="agent-card-footer">
                 <button className="btn btn-primary" style={{ width: '100%' }}>
@@ -327,6 +332,7 @@ function Dashboard() {
           <GenerateSessionsModal
             agentId={selectedAgentForGeneration.id}
             agentName={selectedAgentForGeneration.name}
+            agentDescription={selectedAgentForGeneration.use_case || selectedAgentForGeneration.description}
             onClose={() => {
               setShowGenerateSessionsModal(false);
               setSelectedAgentForGeneration(null);

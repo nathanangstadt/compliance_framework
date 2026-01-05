@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { agentsAPI } from '../services/api';
 import { useToast } from './Toast';
 
-function GenerateSessionsModal({ agentId, agentName, onClose, onJobSubmitted }) {
+function GenerateSessionsModal({ agentId, agentName, agentDescription, onClose, onJobSubmitted }) {
   const [formData, setFormData] = useState({
     num_sessions: 10,
     scenario_variations: '',
@@ -40,6 +40,12 @@ function GenerateSessionsModal({ agentId, agentName, onClose, onJobSubmitted }) 
         <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem', fontSize: '0.938rem' }}>
           The LLM will create realistic simulated sessions with tool use sequences matching your agent's workflow.
         </p>
+        {agentDescription && (
+          <div style={{ padding: '0.75rem', backgroundColor: 'var(--color-bg-secondary)', borderRadius: '6px', marginBottom: '1rem', fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+            <div style={{ fontWeight: 600, marginBottom: '0.35rem', color: 'var(--color-text)' }}>Agent Description</div>
+            <div>{agentDescription}</div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
