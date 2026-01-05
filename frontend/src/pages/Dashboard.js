@@ -169,7 +169,10 @@ function Dashboard({ mode = 'observability' }) {
             if (message.role === 'assistant' && Array.isArray(message.content)) {
               message.content.forEach(block => {
                 if (block.type === 'tool_use') {
-                  toolCounts[block.name] = (toolCounts[block.name] || 0) + 1;
+                  const entry = toolCounts[block.name] || { value: 0, ids: [] };
+                  entry.value += 1;
+                  entry.ids.push(memory.id);
+                  toolCounts[block.name] = entry;
                 }
               });
             }
@@ -179,7 +182,7 @@ function Dashboard({ mode = 'observability' }) {
 
       // Convert to array and sort by count
       const toolData = Object.entries(toolCounts)
-        .map(([name, value]) => ({ name, value }))
+        .map(([name, value]) => ({ name, value: value.value, ids: value.ids }))
         .sort((a, b) => b.value - a.value)
         .slice(0, 5); // Top 5 tools
 
@@ -551,6 +554,13 @@ function Dashboard({ mode = 'observability' }) {
     navigate(`/${agentId}/issues?${params.toString()}`);
   };
 
+  const handleToolClick = (toolEntry) => {
+    if (!toolEntry || !toolEntry.ids || toolEntry.ids.length === 0) return;
+    const params = new URLSearchParams();
+    params.set('memories', toolEntry.ids.join(','));
+    navigate(`/${agentId}/issues?${params.toString()}`);
+  };
+
   const maxSessions = getMaxSessions();
 
   // Sort variants
@@ -842,6 +852,7 @@ function Dashboard({ mode = 'observability' }) {
                     fill="#8884d8"
                     dataKey="value"
                     isAnimationActive={false}
+                    onClick={(_, index) => handleToolClick(toolUsageData[index])}
                   >
                     {toolUsageData.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={TOOL_COLORS[index % TOOL_COLORS.length]} />
