@@ -19,6 +19,7 @@ function Dashboard({ mode = 'observability' }) {
   const [variantsLoading, setVariantsLoading] = useState(false);
   const [variantsSortField, setVariantsSortField] = useState('session_count');
   const [variantsSortDir, setVariantsSortDir] = useState('desc');
+  const [sessionActivity, setSessionActivity] = useState([]);
 
   // Agent list state (for agent selection mode)
   const [agents, setAgents] = useState([]);
@@ -30,6 +31,7 @@ function Dashboard({ mode = 'observability' }) {
 
   const navigate = useNavigate();
   const toast = useToast();
+
 
   // Load agents list (for agent selection mode)
   const loadAgents = useCallback(async () => {
@@ -65,8 +67,8 @@ function Dashboard({ mode = 'observability' }) {
     setShowDeleteDialog(true);
   };
 
-  // Fetch tool usage only from processed (evaluated) instances
-  const fetchToolUsage = useCallback(async (agentId) => {
+  // Fetch sessions once to drive both tool usage and session activity
+  const fetchSessionsData = useCallback(async (agentId) => {
     if (!agentId) return;  // Skip if no agentId
     setToolUsageLoading(true);
     const toolCounts = {};
@@ -111,9 +113,14 @@ function Dashboard({ mode = 'observability' }) {
         .slice(0, 5); // Top 5 tools
 
       setToolUsageData(toolData);
+
+      // Build session activity heatmap based on timestamps
+      const activity = buildSessionActivity(memories);
+      setSessionActivity(activity);
     } catch (err) {
       console.error('Error fetching tool usage:', err);
       setToolUsageData([]);
+      setSessionActivity([]);
     } finally {
       setToolUsageLoading(false);
     }
@@ -153,10 +160,10 @@ function Dashboard({ mode = 'observability' }) {
     if (!agentId) return;
     await Promise.all([
       loadSummary(agentId),
-      fetchToolUsage(agentId),
+      fetchSessionsData(agentId),
       fetchVariants(agentId)
     ]);
-  }, [loadSummary, fetchToolUsage, fetchVariants]);
+  }, [loadSummary, fetchSessionsData, fetchVariants]);
 
   // Load data on mount - either agent list or dashboard data
   useEffect(() => {
@@ -407,28 +414,71 @@ function Dashboard({ mode = 'observability' }) {
     return `$${value.toFixed(2)}`;
   };
 
-  // Generate simulated session activity data (7 days x 6 time slots)
-  const generateSessionActivity = () => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const times = ['12 AM', '4 AM', '8 AM', '12 PM', '4 PM', '8 PM'];
-    const activity = [];
+  const TIME_SLOTS = [
+    { label: '12 AM', start: 0, end: 3 },
+    { label: '4 AM', start: 4, end: 7 },
+    { label: '8 AM', start: 8, end: 11 },
+    { label: '12 PM', start: 12, end: 15 },
+    { label: '4 PM', start: 16, end: 19 },
+    { label: '8 PM', start: 20, end: 23 },
+  ];
 
-    for (let timeIdx = 0; timeIdx < times.length; timeIdx++) {
-      const row = { time: times[timeIdx] };
-      for (let dayIdx = 0; dayIdx < days.length; dayIdx++) {
-        // Simulate activity with peak during business hours (8 AM - 8 PM) on weekdays
-        const isBusinessHours = timeIdx >= 2 && timeIdx <= 5;
-        const isWeekday = dayIdx < 5;
-        const baseProbability = isBusinessHours && isWeekday ? 0.7 : 0.2;
-        const sessions = Math.floor(Math.random() * 40 * baseProbability);
-        row[days[dayIdx]] = sessions;
-      }
-      activity.push(row);
+  const buildSessionActivity = (memories) => {
+    const timestamps = memories
+      .map(m => m.metadata?.timestamp)
+      .filter(Boolean)
+      .map(ts => new Date(ts));
+
+    if (!timestamps.length) {
+      // No timestamps, return empty grid
+      const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      return TIME_SLOTS.map(slot => {
+        const row = { time: slot.label };
+        days.forEach(d => row[d] = 0);
+        return row;
+      });
     }
-    return activity;
-  };
 
-  const sessionActivity = generateSessionActivity();
+    // Oldest session determines the week window (start of that day)
+    const oldest = timestamps.reduce((min, ts) => ts < min ? ts : min, timestamps[0]);
+    const weekStart = new Date(oldest);
+    weekStart.setUTCHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    // Build day labels from weekStart (7 days)
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+      days.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
+    }
+
+    // Initialize grid
+    const grid = TIME_SLOTS.map(slot => {
+      const row = { time: slot.label };
+      days.forEach(d => row[d] = 0);
+      return row;
+    });
+
+    // Helper to find slot index
+    const findSlot = (hour) => {
+      for (let i = 0; i < TIME_SLOTS.length; i++) {
+        const slot = TIME_SLOTS[i];
+        if (hour >= slot.start && hour <= slot.end) return i;
+      }
+      return 0;
+    };
+
+    // Count sessions within the week window
+    timestamps.forEach(ts => {
+      if (ts < weekStart || ts >= weekEnd) return;
+      const dayIndex = Math.floor((ts - weekStart) / (24 * 60 * 60 * 1000));
+      const dayLabel = days[dayIndex];
+      const slotIndex = findSlot(ts.getUTCHours());
+      grid[slotIndex][dayLabel] = (grid[slotIndex][dayLabel] || 0) + 1;
+    });
+
+    return grid;
+  };
 
   // Tool usage colors
   const TOOL_COLORS = ['#5a7a95', '#81b29a', '#daa65d', '#7ba3c7', '#8a9199'];
