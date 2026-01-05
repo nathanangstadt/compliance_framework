@@ -183,8 +183,7 @@ function Dashboard({ mode = 'observability' }) {
       // Convert to array and sort by count
       const toolData = Object.entries(toolCounts)
         .map(([name, value]) => ({ name, value: value.value, ids: value.ids }))
-        .sort((a, b) => b.value - a.value)
-        .slice(0, 5); // Top 5 tools
+        .sort((a, b) => b.value - a.value);
 
       setToolUsageData(toolData);
 
