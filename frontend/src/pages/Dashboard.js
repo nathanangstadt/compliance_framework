@@ -343,9 +343,11 @@ function Dashboard({ mode = 'observability' }) {
                 )}
               </div>
               <div className="agent-card-footer">
-                <button className="btn btn-primary" style={{ width: '100%' }}>
-                  View Dashboard →
-                </button>
+                {!isDesignMode && (
+                  <button className="btn btn-primary" style={{ width: '100%' }}>
+                    View Dashboard →
+                  </button>
+                )}
               </div>
             </div>
           ))}
