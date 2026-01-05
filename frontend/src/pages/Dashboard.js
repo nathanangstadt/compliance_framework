@@ -16,42 +16,35 @@ const TIME_SLOTS = [
 ];
 
 function buildSessionActivity(memories) {
+  const daysLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const timestamps = memories
     .map(m => ({ ts: m.metadata?.timestamp, id: m.id }))
     .filter(m => !!m.ts)
     .map(m => ({ date: new Date(m.ts), id: m.id }));
 
-  if (!timestamps.length) {
-    // No timestamps, return empty grid
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    return TIME_SLOTS.map(slot => {
+  // Initialize empty grid helper
+  const emptyGrid = () =>
+    TIME_SLOTS.map(slot => {
       const row = { time: slot.label };
-      days.forEach(d => row[d] = { count: 0, ids: [] });
+      daysLabels.forEach(d => (row[d] = { count: 0, ids: [] }));
       return row;
     });
+
+  if (!timestamps.length) {
+    return emptyGrid();
   }
 
-  // Oldest session determines the week window (start of that day)
-  const oldest = timestamps.reduce((min, entry) => entry.date < min.date ? entry : min, timestamps[0]);
+  // Oldest session determines week, but align to Monday start
+  const oldest = timestamps.reduce((min, entry) => (entry.date < min.date ? entry : min), timestamps[0]);
   const weekStart = new Date(oldest.date);
+  const utcDay = weekStart.getUTCDay(); // 0=Sun, 1=Mon
+  const diffToMonday = utcDay === 0 ? 6 : utcDay - 1;
+  weekStart.setUTCDate(weekStart.getUTCDate() - diffToMonday);
   weekStart.setUTCHours(0, 0, 0, 0);
   const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  // Build day labels from weekStart (7 days)
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
-    days.push(d.toLocaleDateString('en-US', { weekday: 'short' }));
-  }
+  const grid = emptyGrid();
 
-  // Initialize grid
-  const grid = TIME_SLOTS.map(slot => {
-    const row = { time: slot.label };
-    days.forEach(d => row[d] = { count: 0, ids: [] });
-    return row;
-  });
-
-  // Helper to find slot index
   const findSlot = (hour) => {
     for (let i = 0; i < TIME_SLOTS.length; i++) {
       const slot = TIME_SLOTS[i];
@@ -60,12 +53,12 @@ function buildSessionActivity(memories) {
     return 0;
   };
 
-  // Count sessions within the week window
   timestamps.forEach(entry => {
     const ts = entry.date;
     if (ts < weekStart || ts >= weekEnd) return;
     const dayIndex = Math.floor((ts - weekStart) / (24 * 60 * 60 * 1000));
-    const dayLabel = days[dayIndex];
+    if (dayIndex < 0 || dayIndex > 6) return;
+    const dayLabel = daysLabels[dayIndex];
     const slotIndex = findSlot(ts.getUTCHours());
     const cell = grid[slotIndex][dayLabel] || { count: 0, ids: [] };
     cell.count += 1;
