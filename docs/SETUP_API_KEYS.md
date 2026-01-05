@@ -51,9 +51,11 @@ To use LLM-based policy checks (like semantic approval validation), you need to 
 
 After configuring the API key, test it:
 
-1. Navigate to **Policies** → Create a policy with **🤖 LLM Tool Response** check
-2. Upload a sample memory and evaluate
-3. Check the violation details - should show LLM's actual response instead of "API key not configured"
+1. Call the built-in test endpoints:
+   - Anthropic: `GET http://localhost:8000/api/test/anthropic`
+   - OpenAI: `GET http://localhost:8000/api/test/openai`
+2. Navigate to **Policies** → Create a policy with **🤖 LLM Tool Response** or **🔍 LLM Response Validation** check
+3. Process sessions and check violation details - should show the LLM's actual response instead of "API key not configured"
 
 ## Which LLM Checks Need API Keys?
 
@@ -77,11 +79,15 @@ After configuring the API key, test it:
 - **Typical Cost**: $0.001 - $0.01 per policy evaluation
 
 ### OpenAI GPT
-- **Model**: gpt-4-turbo-preview
-- **Pricing**: ~$10 per million input tokens, ~$30 per million output tokens
+- **Models**: gpt-4o, gpt-4o-mini
+- **Pricing**: baked into the app (see `backend/app/services/check_types.py`); dashboard shows estimated cost after LLM policies run
 - **Typical Cost**: $0.003 - $0.03 per policy evaluation
 
 **Recommendation**: Start with Anthropic - it's more cost-effective for this use case.
+
+### Security
+- Do not commit real API keys. Keep `backend/.env` local (use `.env.example` as a template).
+- Consider `git update-index --skip-worktree backend/.env` to avoid accidental commits.
 
 ## Troubleshooting
 

@@ -285,6 +285,38 @@ Both scripts create the same 4 policies:
 
 This project is intended to run inside Docker via `docker-compose up --build`. Host-only execution is not supported; the browser is the only thing that should run on the host.
 
+### Running in Docker
+```bash
+docker compose up -d --build
+```
+
+### Running backend tests in Docker
+```bash
+docker compose exec backend python -m pytest
+```
+
+### Resetting evaluations for an agent
+```bash
+docker compose exec backend curl -X DELETE http://localhost:8000/api/compliance/<agent_id>/reset
+```
+
+### Checking LLM connectivity
+- Anthropic: `GET http://localhost:8000/api/test/anthropic`
+- OpenAI: `GET http://localhost:8000/api/test/openai`
+
+### LLM pricing assumptions
+- Pricing is baked into `backend/app/services/check_types.py`. Costs are estimated per model based on current defaults and surface in the dashboard after running LLM-based policies.
+  - Anthropic: claude-sonnet-4-5-20250929, claude-opus-4-20250514, claude-haiku-3-5-20241022
+  - OpenAI: gpt-4o, gpt-4o-mini
+
+### Policy reprocessing behavior
+- Updating a policy marks previously evaluated sessions as stale (Needs Re-processing).
+- “Process All Pending” re-evaluates all enabled policies for those sessions; per-policy evaluate runs a single policy across all sessions.
+
+### API keys and security
+- Do not commit real API keys. Use `backend/.env.example` as a template and keep `backend/.env` local.
+- Avoid checking in secrets by marking `.env` as skipped in git or using a global gitignore.
+
 ### Adding New Policy Types
 
 1. Add policy type to `backend/app/schemas.py`
