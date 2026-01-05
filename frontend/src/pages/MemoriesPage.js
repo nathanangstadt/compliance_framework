@@ -126,12 +126,6 @@ function MemoriesPage() {
       return;
     }
 
-    // Confirm large batches to avoid surprises
-    if (idsToProcess.length > 10) {
-      const confirmed = window.confirm(`Process ${idsToProcess.length} pending sessions against all enabled policies?`);
-      if (!confirmed) return;
-    }
-
     try {
       await submitJob(agentId, idsToProcess);
       setSelectedIds(new Set());
