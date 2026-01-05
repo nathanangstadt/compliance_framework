@@ -8,8 +8,9 @@ import ProcessingProgress from '../components/ProcessingProgress';
 function StatusBadge({ status }) {
   if (!status) return <span className="status-badge unprocessed">Unprocessed</span>;
 
-  // Processed but missing evaluations for new policies
-  if (status.is_processed && !status.is_fully_evaluated) {
+  const needsReprocessing = status.needs_reprocessing || (status.is_processed && !status.is_fully_evaluated);
+
+  if (needsReprocessing) {
     return (
       <span
         className="status-badge partial"
@@ -20,12 +21,10 @@ function StatusBadge({ status }) {
     );
   }
 
-  // Fully processed
   if (status.is_processed && status.is_fully_evaluated) {
     return <span className="status-badge processed">Processed</span>;
   }
 
-  // Never processed
   return <span className="status-badge unprocessed">Unprocessed</span>;
 }
 
@@ -57,6 +56,13 @@ function MemoriesPage() {
     window.addEventListener('jobCompleted', handleJobCompleted);
     return () => window.removeEventListener('jobCompleted', handleJobCompleted);
   }, []);
+
+  // Auto-refresh when background job completes
+  useEffect(() => {
+    if (!isProcessing && jobStatus) {
+      loadMemories();
+    }
+  }, [isProcessing, jobStatus]);
 
   const loadMemories = async () => {
     if (!agentId) return;
@@ -120,6 +126,12 @@ function MemoriesPage() {
       return;
     }
 
+    // Confirm large batches to avoid surprises
+    if (idsToProcess.length > 10) {
+      const confirmed = window.confirm(`Process ${idsToProcess.length} pending sessions against all enabled policies?`);
+      if (!confirmed) return;
+    }
+
     try {
       await submitJob(agentId, idsToProcess);
       setSelectedIds(new Set());
@@ -170,9 +182,15 @@ function MemoriesPage() {
             className="btn btn-primary"
             onClick={handleProcess}
             disabled={isProcessing}
+            title="Processes all pending sessions against all enabled policies"
           >
             {getProcessButtonLabel()}
           </button>
+        )}
+        {(counts.unprocessed + counts.needsReprocessing) > 0 && (
+          <span className="badge badge-warning" style={{ marginLeft: '0.75rem' }}>
+            Pending: {counts.unprocessed + counts.needsReprocessing}
+          </span>
         )}
         <button
           className="btn btn-secondary"
