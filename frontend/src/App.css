@@ -80,7 +80,7 @@ body {
 .navbar-content {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-left: 60px;
   width: 100%;
 }
@@ -88,7 +88,7 @@ body {
 .navbar-content-full {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
   padding-left: 1rem;
   padding-right: 1rem;
