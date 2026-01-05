@@ -208,17 +208,15 @@ function Dashboard({ mode = 'observability' }) {
       <div className="dashboard">
         {/* Create Agent Button */}
         <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem', minHeight: '42px' }}>
-          {isDesignMode ? (
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowCreateAgentModal(true)}
-              style={{ padding: '0.75rem 1.5rem', fontSize: '0.938rem', fontWeight: 600 }}
-            >
-              + Create New Agent
-            </button>
-          ) : (
-            <span style={{ visibility: 'hidden', padding: '0.75rem 1.5rem' }}>placeholder</span>
-          )}
+          <button
+            className="btn btn-primary"
+            onClick={() => isDesignMode && setShowCreateAgentModal(true)}
+            style={{ padding: '0.75rem 1.5rem', fontSize: '0.938rem', fontWeight: 600 }}
+            disabled={!isDesignMode}
+            title={isDesignMode ? 'Create a new agent' : 'Available in Design mode'}
+          >
+            + Create New Agent
+          </button>
         </div>
 
         <div className="agent-grid">
@@ -242,7 +240,7 @@ function Dashboard({ mode = 'observability' }) {
                         setSelectedAgentForGeneration(agent);
                         setShowGenerateSessionsModal(true);
                       }}
-                      title="Generate sessions"
+                      title={isDesignMode ? "Generate sessions" : "Available in Design mode"}
                       disabled={!isDesignMode}
                     >
                       ✨
@@ -250,7 +248,7 @@ function Dashboard({ mode = 'observability' }) {
                     <button
                       className="icon-button"
                       onClick={(e) => openDeleteDialog(e, agent)}
-                      title="Delete agent"
+                      title={isDesignMode ? "Delete agent" : "Available in Design mode"}
                       disabled={!isDesignMode}
                     >
                       🗑️
