@@ -1,0 +1,108 @@
+{
+  "metadata": {
+    "session_id": "session_00001",
+    "timestamp": "2026-01-02T09:00:00Z",
+    "duration_seconds": 95.5,
+    "business_identifiers": {
+      "employee_id": "E123456",
+      "job_position_id": "JP1001",
+      "department_id": "D150",
+      "manager_id": "M2345",
+      "onboarding_batch_id": "OB001"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to onboard a new employee, but I'm getting a customer not found error. What should I do?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let's start by verifying the documents for the new employee. Could you confirm if the documents have been submitted?"
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "E123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"success\", \"details\": \"Documents are complete and verified.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The documents are complete. Next, let's create the employee record in the HR system."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_record",
+          "input": {
+            "employee_id": "E123456",
+            "job_position_id": "JP1001",
+            "department_id": "D150"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "Error: Customer not found in the system."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there's an error creating the employee record: 'Customer not found'. Let's check the manager approvals as they could be missing."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "request_manager_approvals",
+          "input": {
+            "manager_id": "M2345",
+            "employee_id": "E123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"pending\", \"message\": \"Manager approval has not yet been processed. The manager will be informed.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The manager's approval is still pending, which is likely causing the 'customer not found' error. I've sent a notification to the manager. Please follow up with them to expedite the process. Once approved, you should be able to continue with onboarding smoothly."
+    }
+  ]
+}

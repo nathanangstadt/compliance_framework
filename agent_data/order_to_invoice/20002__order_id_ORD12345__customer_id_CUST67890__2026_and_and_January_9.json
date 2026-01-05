@@ -1,0 +1,157 @@
+{
+  "metadata": {
+    "session_id": "session_00002",
+    "timestamp": "2026-01-07T10:00:00Z",
+    "duration_seconds": 82.7,
+    "business_identifiers": {
+      "order_id": "ORD12345",
+      "customer_id": "CUST67890",
+      "invoice_id": "INV98765"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Please process pending orders and generate invoices for them."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, I will start by retrieving the list of pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "[{\"order_id\":\"ORD12345\",\"customer_id\":\"CUST67890\",\"amount\":7500}]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I have retrieved one pending order. Next, I will check the customer's account status."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST67890"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\":\"active\",\"balance\":5000}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The customer's account is active. I will now check the inventory for the order items."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "check_inventory",
+          "input": {
+            "order_id": "ORD12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "Inventory check success, sufficient stock available."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Inventory is available. I will proceed to create the invoice."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "create_invoice",
+          "input": {
+            "order_id": "ORD12345",
+            "amount": 7500
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"invoice_id\":\"INV98765\",\"status\":\"created\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The invoice has been successfully created with invoice ID INV98765. Finally, I will update the order status and sync back to the ERP/CRM."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05MNO345",
+          "name": "update_order_status",
+          "input": {
+            "order_id": "ORD12345",
+            "status": "invoiced"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05MNO345",
+          "content": "Order status updated to invoiced."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The order ORD12345 has been processed and invoiced successfully as INV98765."
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "agent_id": "employee_onboarding",
+  "agent_name": "Employee Onboarding",
+  "description": "Create an agent that performs the back office automation required to onboard a new employee. This is not a chat experience agent but one that runs completely in the back office. It may however engage humans for approvals, exception handling, or clarification through human in the loop tools",
+  "use_case": "The Employee Onboarding agent automates the back-office processes involved in bringing a new employee into the organization. It coordinates tasks such as document verification, account creation, and provisioning resources, interacting with humans only for necessary approvals or clarifications.",
+  "tools": [
+    {
+      "name": "get_pending_orders",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "get_customer_account",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "request_human_approval",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "update_customer_balance",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "send_invoice_emial",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "reverse_inventory",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "create_invoice",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "update_order_status",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "get_discount_rate",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "check_inventory",
+      "description": "As per the tool name"
+    }
+  ],
+  "business_identifiers": {
+    "employee_id": "Unique identifier for the employee assigned by the HR system",
+    "job_position_id": "Identifier for the job position to which the employee is appointed",
+    "department_id": "Unique identifier for the employee's department",
+    "manager_id": "Identifier for the employee's direct manager",
+    "onboarding_batch_id": "Identifier for the onboarding group or batch"
+  },
+  "llm_config": {
+    "provider": "openai",
+    "model": "gpt-4o"
+  },
+  "created_at": "2026-01-05T00:15:38.761622"
+}

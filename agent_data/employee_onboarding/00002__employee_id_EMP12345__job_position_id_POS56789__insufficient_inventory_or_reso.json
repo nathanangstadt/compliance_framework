@@ -1,0 +1,163 @@
+{
+  "metadata": {
+    "session_id": "session_00002",
+    "timestamp": "2026-01-03T10:00:00Z",
+    "duration_seconds": 83.5,
+    "business_identifiers": {
+      "employee_id": "EMP12345",
+      "job_position_id": "POS56789",
+      "department_id": "DEP00123",
+      "manager_id": "MAN00456",
+      "onboarding_batch_id": "BATCH09876"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need help with onboarding a new employee, John Doe."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, let's start by verifying the documents submitted for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"success\", \"message\": \"Documents verified successfully.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John Doe's documents have been verified. Next, I'll create an employee record."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_record",
+          "input": {
+            "employee_id": "EMP12345",
+            "job_position_id": "POS56789",
+            "department_id": "DEP00123"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"success\", \"record_id\": \"REC00001\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The employee record has been created. Now, I will proceed to assign an email account for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "assign_email_account",
+          "input": {
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"success\", \"email\": \"john.doe@company.com\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "An email account has been successfully created for John Doe. I'll now request IT equipment."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "provision_it_equipment",
+          "input": {
+            "employee_id": "EMP12345",
+            "job_position_id": "POS56789"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"status\": \"error\", \"message\": \"Insufficient inventory for requested equipment.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Unfortunately, there is insufficient inventory for the requested IT equipment. Let's proceed with other tasks while we resolve this issue."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05MNO345",
+          "name": "schedule_orientation",
+          "input": {
+            "employee_id": "EMP12345",
+            "onboarding_batch_id": "BATCH09876"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05MNO345",
+          "content": "{\"status\": \"success\", \"orientation_date\": \"2026-01-07T09:00:00Z\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The orientation session for John Doe is scheduled for January 7th, 2026 at 9:00 AM. We've successfully completed most of the onboarding steps. We will follow up on IT equipment availability. If there's anything else needed, feel free to let me know."
+    }
+  ]
+}

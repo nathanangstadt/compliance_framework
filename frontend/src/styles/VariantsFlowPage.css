@@ -43,13 +43,47 @@
   border-radius: 2px;
 }
 
-.flow-container {
-  background: white;
+.flow-canvas {
+  background: #f7f9fb;
   border: 1px solid var(--color-border-light);
-  border-radius: 8px;
+  border-radius: 12px;
   padding: 1rem;
+  overflow: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
-.flow-chart {
-  height: 500px;
+.flow-node rect {
+  filter: drop-shadow(0 4px 10px rgba(31, 41, 51, 0.08));
+}
+
+.flow-node-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  fill: #1f2933;
+}
+.flow-node-title-bold {
+  font-weight: 700;
+}
+.flow-node-subtitle {
+  font-size: 0.8rem;
+  fill: #6b7280;
+}
+
+.flow-link-path path {
+  stroke-opacity: 0.75;
+}
+
+.flow-count {
+  fill: #344054;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.empty-state {
+  background: #fff;
+  border: 1px dashed var(--color-border-light);
+  border-radius: 10px;
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-secondary);
 }

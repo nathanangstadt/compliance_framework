@@ -1,0 +1,239 @@
+{
+  "metadata": {
+    "session_id": "session_00001",
+    "timestamp": "2026-01-07T09:00:00Z",
+    "duration_seconds": 87.5,
+    "business_identifiers": {
+      "order_id": "ORD123456",
+      "customer_id": "CUST78910",
+      "invoice_id": "INV456789"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to process new orders from our sales channels."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by gathering the pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "[{\"order_id\": \"ORD123456\", \"customer_id\": \"CUST78910\", \"amount\": 1500.00}]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Found an order. Let's check the customer's account status."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST78910"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"active\", \"balance\": 5000.00}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The customer account is active with a sufficient balance. Checking inventory for the order."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "check_inventory",
+          "input": {
+            "order_id": "ORD123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "All items in stock"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Inventory is available. Applying discounts if any."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "get_discount_rate",
+          "input": {
+            "customer_id": "CUST78910",
+            "order_id": "ORD123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"discount_rate\": 0.1}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Applying a 10% discount. Since the order value is high, routing for approval."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05MNO345",
+          "name": "request_human_approval",
+          "input": {
+            "order_id": "ORD123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05MNO345",
+          "content": "Approved"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Order approved. Reserving inventory and generating invoice."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_06PQR678",
+          "name": "reserve_inventory",
+          "input": {
+            "order_id": "ORD123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_06PQR678",
+          "content": "Inventory reserved"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Inventory reserved. Now generating the invoice."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_07STU901",
+          "name": "create_invoice",
+          "input": {
+            "order_id": "ORD123456",
+            "discount_rate": 0.1
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_07STU901",
+          "content": "{\"invoice_id\": \"INV456789\", \"amount_due\": 1350.00}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Invoice INV456789 generated with the adjusted amount of $1350. I'll send it to the customer now."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_08VWX234",
+          "name": "send_invoice_email",
+          "input": {
+            "invoice_id": "INV456789",
+            "customer_id": "CUST78910"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_08VWX234",
+          "content": "Email sent"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The invoice has been sent to the customer. The process is complete and updated in the system."
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "metadata": {
+    "session_id": "session_00005",
+    "timestamp": "2026-01-08T13:00:00Z",
+    "duration_seconds": 78.4,
+    "business_identifiers": {
+      "order_id": "ORD123456789",
+      "customer_id": "CUST987654321",
+      "invoice_id": "INV00123456789"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I'd like to process pending orders and generate invoices."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, I'll start by retrieving all pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "[{\"order_id\": \"ORD123456789\", \"customer_id\": \"CUST987654321\"}]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Found 1 pending order. Let's check the customer's account status."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST987654321"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"active\", \"balance\": 250.00}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The customer's account is active. Now checking inventory for the order items."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "check_inventory",
+          "input": {
+            "order_id": "ORD123456789"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"item_id\": \"ITEM001\", \"available_quantity\": 0}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "There's insufficient inventory for one of the items. Requesting inventory restock."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "reserve_inventory",
+          "input": {
+            "order_id": "ORD123456789"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "Error: Insufficient quantity for item ITEM001"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Unable to reserve inventory due to insufficient stock. I will mark the order for review and await further instructions."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05MNO345",
+          "name": "update_order_status",
+          "input": {
+            "order_id": "ORD123456789",
+            "status": "Pending Inventory"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05MNO345",
+          "content": "{\"success\": true}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The pending order ORD123456789 cannot be fulfilled currently due to insufficient stock. The order status has been updated accordingly. Please review inventory levels and proceed once restock is made. Let me know if there\u2019s anything else I can assist with."
+    }
+  ]
+}

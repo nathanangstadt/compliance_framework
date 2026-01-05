@@ -1,0 +1,83 @@
+{
+  "metadata": {
+    "session_id": "session_00004",
+    "timestamp": "2026-01-08T12:00:00Z",
+    "duration_seconds": 95,
+    "business_identifiers": {
+      "order_id": "ORD12345",
+      "customer_id": null,
+      "invoice_id": null
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I'd like to process orders and generate invoices."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let's start by fetching the pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "[{\"order_id\": \"ORD12345\", \"customer_id\": \"CUST6789\", \"items\": [{\"product_id\": \"PROD1\", \"quantity\": 5}], \"total_value\": 1000}]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I found 1 pending order. Let's validate the customer account for order ORD12345."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02ABC456",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST6789"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02ABC456",
+          "content": "Error: Customer not found"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there is an error: the customer account with ID CUST6789 could not be found. This may need to be resolved before proceeding with the order."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Unfortunately, we encountered an issue processing order ORD12345 because the customer account could not be found. Please check the customer account details and try again."
+    }
+  ]
+}

@@ -3,15 +3,56 @@
   "agent_name": "Order To Invoice",
   "description": "Automates the end-to-end flow from sales order capture through invoicing, approvals, and reconciliation, ensuring high-value orders follow the correct review steps and billing stays accurate.",
   "use_case": "Ingest orders from multiple channels, validate customer/account status, check inventory, apply pricing and discounts, route high-value orders for approval, generate invoices, and sync status back to ERP/CRM systems.",
-  "tools": [],
+  "tools": [
+    {
+      "name": "get_pending_orders",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "get_customer_account",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "request_human_approval",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "update_customer_balance",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "send_invoice_email",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "reserve_inventory",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "create_invoice",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "update_order_status",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "get_discount_rate",
+      "description": "As per the tool name"
+    },
+    {
+      "name": "check_inventory",
+      "description": "As per the tool name"
+    }    
+  ],
   "business_identifiers": {
     "order_id": "Unique order identifier",
     "customer_id": "Customer account identifier",
     "invoice_id": "Invoice reference number"
   },
   "llm_config": {
-    "provider": "anthropic",
-    "model": "claude-sonnet-4-5-20250929"
+    "provider": "openai",
+    "model": "gpt-4o"
   },
   "created_at": "2026-01-04T00:00:00Z"
 }

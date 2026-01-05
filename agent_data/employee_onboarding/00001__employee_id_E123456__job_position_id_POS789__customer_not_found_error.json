@@ -1,0 +1,125 @@
+{
+  "metadata": {
+    "session_id": "session_00001",
+    "timestamp": "2026-01-02T09:00:00Z",
+    "duration_seconds": 48.7,
+    "business_identifiers": {
+      "employee_id": "E123456",
+      "job_position_id": "POS789",
+      "department_id": "D456",
+      "manager_id": "M234",
+      "onboarding_batch_id": "OB20260102"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to onboard a new employee, Jane Doe, for the data analyst position starting next week."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let's start the onboarding process for Jane Doe. First, I'll verify the submitted documents."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_name": "Jane Doe",
+            "employee_id": "E123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"success\", \"documents_verified\": true}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The documents for Jane Doe are verified. Next, I'll create an employee record."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_record",
+          "input": {
+            "employee_name": "Jane Doe",
+            "employee_id": "E123456",
+            "job_position_id": "POS789",
+            "department_id": "D456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "Error: Customer not found"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there was an error creating the employee record: Customer not found. Please double-check the employee details and try again."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "I double-checked the details, and everything seems correct. Could you try again?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me attempt to create the employee record one more time."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "create_employee_record",
+          "input": {
+            "employee_name": "Jane Doe",
+            "employee_id": "E123456",
+            "job_position_id": "POS789",
+            "department_id": "D456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"success\", \"employee_record_created\": true}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The employee record for Jane Doe has been successfully created. Please let me know if you need further assistance with the onboarding process."
+    }
+  ]
+}
