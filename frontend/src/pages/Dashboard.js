@@ -839,7 +839,7 @@ function Dashboard({ mode = 'observability' }) {
             {toolUsageLoading ? (
               <div className="loading">Loading tool usage data...</div>
             ) : toolUsageData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={360}>
                 <PieChart>
                   <Pie
                     data={toolUsageData}
@@ -847,7 +847,7 @@ function Dashboard({ mode = 'observability' }) {
                     cy="50%"
                     labelLine={false}
                     label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={100}
+                    outerRadius={150}
                     fill="#8884d8"
                     dataKey="value"
                     isAnimationActive={false}
