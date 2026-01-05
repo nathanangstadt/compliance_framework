@@ -269,11 +269,28 @@ async def get_compliance_summary(agent_id: str, db: Session = Depends(get_db)):
             if latest_ev:
                 usages = _collect_llm_usage(latest_ev.violations)
                 for usage in usages:
-                    llm_usage_totals["total_calls"] += 1
-                    llm_usage_totals["input_tokens"] += usage.get("input_tokens", 0)
-                    llm_usage_totals["output_tokens"] += usage.get("output_tokens", 0)
-                    llm_usage_totals["total_tokens"] += usage.get("total_tokens", 0)
-                    llm_usage_totals["cost_usd"] += usage.get("cost_usd", 0.0)
+                    per_calls = usage.get("per_call") or []
+                    total_calls = usage.get("api_calls", len(per_calls)) or 1
+
+                    # Tokens
+                    input_tokens = usage.get("input_tokens") or usage.get("total_input_tokens") or sum(c.get("input_tokens", 0) for c in per_calls)
+                    output_tokens = usage.get("output_tokens") or usage.get("total_output_tokens") or sum(c.get("output_tokens", 0) for c in per_calls)
+                    total_tokens = usage.get("total_tokens") or usage.get("total_tokens") or (input_tokens + output_tokens)
+
+                    # Cost
+                    cost = usage.get("cost_usd")
+                    if cost is None:
+                        cost = usage.get("total_cost_usd")
+                    if cost is None and per_calls:
+                        cost = sum(c.get("cost_usd", 0) for c in per_calls)
+                    if cost is None:
+                        cost = 0.0
+
+                    llm_usage_totals["total_calls"] += total_calls
+                    llm_usage_totals["input_tokens"] += input_tokens or 0
+                    llm_usage_totals["output_tokens"] += output_tokens or 0
+                    llm_usage_totals["total_tokens"] += total_tokens or 0
+                    llm_usage_totals["cost_usd"] += cost
 
         # Check for resolved status
         session_status = session_statuses.get(memory["id"])

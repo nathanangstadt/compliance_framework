@@ -11,6 +11,7 @@
 - Updated README/.env.example to emphasize Docker-only workflows and default Postgres usage.
 - Aligned agent creation LLM model input with policy UX (free-text model entry).
 - Added LLM usage aggregation in compliance summary plus dashboard LLM call/cost metrics; sessions now flag stale evaluations when policies update.
+- Fixed LLM cost aggregation to use total cost tokens from LLM checks (dashboard cost now non-zero when usage exists).
 
 Files touched include backend schemas/requirements, frontend policy/editor components, API client, create-agent modal, README, env example, and new sample memories.
 

@@ -389,7 +389,7 @@ function Dashboard() {
 
   const formatCost = (value) => {
     if (value === null || value === undefined) return '$0.00';
-    if (value < 0.01) return `$${value.toFixed(4)}`;
+    if (value < 0.01 && value > 0) return `$${value.toFixed(4)}`;
     return `$${value.toFixed(2)}`;
   };
 
