@@ -207,8 +207,8 @@ function Dashboard({ mode = 'observability' }) {
     return (
       <div className="dashboard">
         {/* Create Agent Button */}
-        {isDesignMode && (
-          <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem' }}>
+        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem', minHeight: '42px' }}>
+          {isDesignMode ? (
             <button
               className="btn btn-primary"
               onClick={() => setShowCreateAgentModal(true)}
@@ -216,8 +216,10 @@ function Dashboard({ mode = 'observability' }) {
             >
               + Create New Agent
             </button>
-          </div>
-        )}
+          ) : (
+            <span style={{ visibility: 'hidden', padding: '0.75rem 1.5rem' }}>placeholder</span>
+          )}
+        </div>
 
         <div className="agent-grid">
           {agents.map(agent => (
@@ -232,28 +234,28 @@ function Dashboard({ mode = 'observability' }) {
                     <h2 style={{ marginBottom: '0.25rem' }}>{agent.name}</h2>
                     <span className="agent-id">{agent.id}</span>
                   </div>
-                  {isDesignMode && (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button
-                        className="icon-button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedAgentForGeneration(agent);
-                          setShowGenerateSessionsModal(true);
-                        }}
-                        title="Generate sessions"
-                      >
-                        ✨
-                      </button>
-                      <button
-                        className="icon-button"
-                        onClick={(e) => openDeleteDialog(e, agent)}
-                        title="Delete agent"
-                      >
-                        🗑️
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', gap: '0.5rem', visibility: isDesignMode ? 'visible' : 'hidden' }}>
+                    <button
+                      className="icon-button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAgentForGeneration(agent);
+                        setShowGenerateSessionsModal(true);
+                      }}
+                      title="Generate sessions"
+                      disabled={!isDesignMode}
+                    >
+                      ✨
+                    </button>
+                    <button
+                      className="icon-button"
+                      onClick={(e) => openDeleteDialog(e, agent)}
+                      title="Delete agent"
+                      disabled={!isDesignMode}
+                    >
+                      🗑️
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="agent-card-body">
