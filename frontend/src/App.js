@@ -234,13 +234,16 @@ function NavbarContent() {
       );
     }
 
-    // Default: Agent list at root
+    // Default: Agent list at root (Observability) or Design
     else {
+      const isDesign = location.pathname === '/design';
       return (
         <>
           <div className="navbar-left">
-            <h1>Agent List</h1>
-            <p className="navbar-description">Select an agent to view compliance and policy management</p>
+            <h1>AI Agents</h1>
+            <p className="navbar-description">
+              {isDesign ? 'Create and manage agents' : 'Select an agent to view compliance and policy management'}
+            </p>
           </div>
           <div className="navbar-right" style={{ flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
             <ModeSelector />
