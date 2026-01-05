@@ -697,7 +697,14 @@ function Dashboard({ mode = 'observability' }) {
         {/* Upper Right - Agent Variants */}
         <div className="quadrant">
           <div className="card">
-            <h3>Agent variants</h3>
+            <div className="card-header-with-actions">
+              <h3>Agent variants</h3>
+              <div className="card-actions">
+                <button className="btn btn-primary" onClick={() => navigate(`/${agentId}/variants-flow`)}>
+                  View variant flows
+                </button>
+              </div>
+            </div>
             <p className="card-subtitle">Unique tool usage patterns identified across sessions.</p>
             {variantsLoading ? (
               <div className="loading">Loading variants...</div>

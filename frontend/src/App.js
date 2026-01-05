@@ -11,6 +11,7 @@ import ModeSelector from './components/ModeSelector';
 import { ToastProvider } from './components/Toast';
 import { JobProvider } from './context/JobContext';
 import './App.css';
+import VariantsFlowPage from './pages/VariantsFlowPage';
 
 function NavbarContent() {
   const location = useLocation();
@@ -285,6 +286,7 @@ function AppContent() {
           <Route path="/:agentId/memories" element={<MemoriesPage />} />
           <Route path="/:agentId/memories/:id" element={<MemoryDetailPage />} />
           <Route path="/:agentId/compliance/:id" element={<ComplianceReviewPage />} />
+          <Route path="/:agentId/variants-flow" element={<VariantsFlowPage />} />
           <Route path="/:agentId/policies" element={<PoliciesPage />} />
           <Route path="/:agentId/issues" element={<IssuesPage />} />
         </Routes>
