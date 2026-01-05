@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { ResponsiveContainer, Sankey, Tooltip } from 'recharts';
 import { agentVariantsAPI } from '../services/api';
 import '../styles/VariantsFlowPage.css';
 
@@ -27,6 +28,18 @@ function VariantsFlowPage() {
     load();
   }, [agentId]);
 
+  const sankeyData = useMemo(() => {
+    const toolSet = new Set(uniqueTools.concat(['_start', '_end']));
+    const nodes = Array.from(toolSet).map(name => ({ name: name === '_start' ? 'Start' : name === '_end' ? 'End' : name }));
+    const nameToIndex = Object.fromEntries(nodes.map((n, idx) => [n.name === 'Start' ? '_start' : n.name === 'End' ? '_end' : n.name, idx]));
+    const links = transitions.map(t => ({
+      source: nameToIndex[t.from_tool],
+      target: nameToIndex[t.to_tool],
+      value: t.count
+    }));
+    return { nodes, links };
+  }, [uniqueTools, transitions]);
+
   if (loading) return <div className="loading">Loading variants flow...</div>;
   if (error) return <div className="error">Error: {error}</div>;
   if (!transitions.length) {
@@ -37,17 +50,6 @@ function VariantsFlowPage() {
       </div>
     );
   }
-
-  // Build nodes/links for horizontal sankey-like layout
-  const nodes = Array.from(new Set(uniqueTools.concat(['_start', '_end']))).map((name, idx) => ({
-    id: name,
-    index: idx
-  }));
-  const links = transitions.map(t => ({
-    source: t.from_tool,
-    target: t.to_tool,
-    value: t.count
-  }));
 
   return (
     <div className="variants-flow-page">
@@ -60,23 +62,19 @@ function VariantsFlowPage() {
         <div className="legend-item"><span className="legend-node end"></span>End</div>
         <div className="legend-item"><span className="legend-link"></span>Transition count</div>
       </div>
-      <div className="flow-container">
-        {/* Simple horizontal flow render */}
-        <div className="flow-nodes">
-          {nodes.map(n => (
-            <div key={n.id} className={`flow-node ${n.id === '_start' ? 'start' : n.id === '_end' ? 'end' : ''}`}>
-              {n.id === '_start' ? 'Start' : n.id === '_end' ? 'End' : n.id}
-            </div>
-          ))}
-        </div>
-        <div className="flow-links">
-          {links.map((l, idx) => (
-            <div key={idx} className="flow-link">
-              <span className="flow-link-label">{l.source} → {l.target}</span>
-              <span className="flow-link-count">{l.value}</span>
-            </div>
-          ))}
-        </div>
+      <div className="flow-chart">
+        <ResponsiveContainer width="100%" height={500}>
+          <Sankey
+            data={sankeyData}
+            nodePadding={24}
+            linkCurvature={0.5}
+            layout="horizontal"
+            node={{ stroke: '#dfe4e8', strokeWidth: 1 }}
+            link={{ stroke: '#7ba3c7' }}
+          >
+            <Tooltip />
+          </Sankey>
+        </ResponsiveContainer>
       </div>
     </div>
   );
