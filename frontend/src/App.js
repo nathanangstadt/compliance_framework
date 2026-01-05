@@ -266,8 +266,8 @@ function NavbarContent() {
 
 function AppContent() {
   const location = useLocation();
-  // Show sidebar only on root (/) for agent selection
-  const showSidebar = location.pathname === '/';
+  // Show sidebar only on root (/) and design for agent selection
+  const showSidebar = location.pathname === '/' || location.pathname === '/design';
 
   return (
     <div className="App">
@@ -276,7 +276,8 @@ function AppContent() {
 
       <div className={showSidebar ? "main-content" : "main-content-full"}>
         <Routes>
-          <Route path="/" element={<Dashboard />} />
+          <Route path="/" element={<Dashboard mode="observability" />} />
+          <Route path="/design" element={<Dashboard mode="design" />} />
           <Route path="/:agentId/dashboard" element={<Dashboard />} />
           <Route path="/:agentId/memories" element={<MemoriesPage />} />
           <Route path="/:agentId/memories/:id" element={<MemoryDetailPage />} />

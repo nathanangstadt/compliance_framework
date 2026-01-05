@@ -1,13 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { complianceAPI, memoryAPI, agentVariantsAPI, agentsAPI } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
 import { useToast } from '../components/Toast';
 import CreateAgentModal from '../components/CreateAgentModal';
 import GenerateSessionsModal from '../components/GenerateSessionsModal';
 
-function Dashboard() {
+function Dashboard({ mode = 'observability' }) {
   const { agentId } = useParams();
+  const location = useLocation();
+  const isDesignMode = mode === 'design' || location.pathname === '/design';
   const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -205,15 +207,17 @@ function Dashboard() {
     return (
       <div className="dashboard">
         {/* Create Agent Button */}
-        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem' }}>
-          <button
-            className="btn btn-primary"
-            onClick={() => setShowCreateAgentModal(true)}
-            style={{ padding: '0.75rem 1.5rem', fontSize: '0.938rem', fontWeight: 600 }}
-          >
-            + Create New Agent
-          </button>
-        </div>
+        {isDesignMode && (
+          <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowCreateAgentModal(true)}
+              style={{ padding: '0.75rem 1.5rem', fontSize: '0.938rem', fontWeight: 600 }}
+            >
+              + Create New Agent
+            </button>
+          </div>
+        )}
 
         <div className="agent-grid">
           {agents.map(agent => (
@@ -228,26 +232,28 @@ function Dashboard() {
                     <h2 style={{ marginBottom: '0.25rem' }}>{agent.name}</h2>
                     <span className="agent-id">{agent.id}</span>
                   </div>
-                  <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    <button
-                      className="icon-button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setSelectedAgentForGeneration(agent);
-                        setShowGenerateSessionsModal(true);
-                      }}
-                      title="Generate sessions"
-                    >
-                      ✨
-                    </button>
-                    <button
-                      className="icon-button"
-                      onClick={(e) => openDeleteDialog(e, agent)}
-                      title="Delete agent"
-                    >
-                      🗑️
-                    </button>
-                  </div>
+                  {isDesignMode && (
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <button
+                        className="icon-button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedAgentForGeneration(agent);
+                          setShowGenerateSessionsModal(true);
+                        }}
+                        title="Generate sessions"
+                      >
+                        ✨
+                      </button>
+                      <button
+                        className="icon-button"
+                        onClick={(e) => openDeleteDialog(e, agent)}
+                        title="Delete agent"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="agent-card-body">
@@ -320,7 +326,7 @@ function Dashboard() {
         )}
 
         {/* Create Agent Modal */}
-        {showCreateAgentModal && (
+        {isDesignMode && showCreateAgentModal && (
           <CreateAgentModal
             onClose={() => setShowCreateAgentModal(false)}
             onSuccess={() => loadAgents()}
@@ -328,7 +334,7 @@ function Dashboard() {
         )}
 
         {/* Generate Sessions Modal */}
-        {showGenerateSessionsModal && selectedAgentForGeneration && (
+        {isDesignMode && showGenerateSessionsModal && selectedAgentForGeneration && (
           <GenerateSessionsModal
             agentId={selectedAgentForGeneration.id}
             agentName={selectedAgentForGeneration.name}
