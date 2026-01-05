@@ -32,11 +32,29 @@ function VariantsFlowPage() {
     const toolSet = new Set(uniqueTools.concat(['_start', '_end']));
     const nodes = Array.from(toolSet).map(name => ({ name: name === '_start' ? 'Start' : name === '_end' ? 'End' : name }));
     const nameToIndex = Object.fromEntries(nodes.map((n, idx) => [n.name === 'Start' ? '_start' : n.name === 'End' ? '_end' : n.name, idx]));
-    const links = transitions.map(t => ({
-      source: nameToIndex[t.from_tool],
-      target: nameToIndex[t.to_tool],
-      value: t.count
-    }));
+
+    const links = [];
+    const seen = new Set();
+
+    transitions.forEach(t => {
+      // Skip invalid/self links and those that point back to start or originate from end
+      if (t.from_tool === t.to_tool) return;
+      if (t.from_tool === '_end') return;
+      if (t.to_tool === '_start') return;
+      const source = nameToIndex[t.from_tool];
+      const target = nameToIndex[t.to_tool];
+      if (source === undefined || target === undefined) return;
+      const key = `${source}-${target}`;
+      if (seen.has(key)) {
+        // accumulate
+        const existing = links.find(l => l.source === source && l.target === target);
+        if (existing) existing.value += t.count;
+      } else {
+        seen.add(key);
+        links.push({ source, target, value: t.count });
+      }
+    });
+
     return { nodes, links };
   }, [uniqueTools, transitions]);
 
