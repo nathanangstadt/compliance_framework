@@ -10,8 +10,8 @@ function CreateAgentModal({ onClose, onSuccess }) {
     business_identifiers: '',
     ensure_tools: '',
     generate_policies: false,
-    llm_provider: 'anthropic',
-    model: 'claude-sonnet-4-5-20250929'
+    llm_provider: 'openai',
+    model: 'gpt-4o'
   });
   const [loading, setLoading] = useState(false);
   const toast = useToast();
@@ -167,7 +167,7 @@ function CreateAgentModal({ onClose, onSuccess }) {
                 <option value="openai">OpenAI</option>
               </select>
               <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.813rem', display: 'block', marginTop: '0.25rem' }}>
-                Anthropic models (e.g., claude-sonnet-4-5-20250929); OpenAI models (e.g., gpt-4o, gpt-4o-mini).
+                OpenAI models (e.g., gpt-4o, gpt-4o-mini); Anthropic models (e.g., claude-sonnet-4-5-20250929).
               </small>
             </div>
 

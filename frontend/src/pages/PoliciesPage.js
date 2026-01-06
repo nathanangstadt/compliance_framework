@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { policyAPI, memoryAPI } from '../services/api';
+import { policyAPI, memoryAPI, agentsAPI } from '../services/api';
 import CompositePolicyBuilder from '../components/CompositePolicyBuilder';
 import APIStatusBanner from '../components/APIStatusBanner';
 import ProcessingProgress from '../components/ProcessingProgress';
@@ -16,12 +16,15 @@ function PoliciesPage() {
   const [editingPolicy, setEditingPolicy] = useState(null);
   const [evaluatingPolicyId, setEvaluatingPolicyId] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [availableTools, setAvailableTools] = useState([]);
   const toast = useToast();
   const { jobStatus, isProcessing, submitJob } = useJob();
+  const prevProcessing = useRef(false);
 
   useEffect(() => {
     if (agentId) {
       loadPolicies();
+      loadAgentTools();
     }
   }, [agentId]);
 
@@ -35,6 +38,22 @@ function PoliciesPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAgentTools = async () => {
+    if (!agentId) return;
+    try {
+      const res = await agentsAPI.get(agentId);
+      const tools = Array.isArray(res.data.tools) ? res.data.tools : [];
+      const toolNames = tools
+        .map(t => (typeof t === 'string' ? t : t?.name))
+        .filter(Boolean);
+      const uniqueSorted = Array.from(new Set(toolNames)).sort((a, b) => a.localeCompare(b));
+      setAvailableTools(uniqueSorted);
+    } catch (err) {
+      // Non-blocking for policy UI; just skip dropdown if unavailable
+      setAvailableTools([]);
     }
   };
 
@@ -132,6 +151,14 @@ function PoliciesPage() {
     }
   }, [isProcessing, evaluatingPolicyId]);
 
+  // Refresh policies after a background evaluation finishes
+  useEffect(() => {
+    if (prevProcessing.current && !isProcessing) {
+      loadPolicies();
+    }
+    prevProcessing.current = isProcessing;
+  }, [isProcessing]);
+
   const getLogicBadge = (config) => {
     const logicType = config?.violation_logic?.type || 'UNKNOWN';
     return (
@@ -208,9 +235,20 @@ function PoliciesPage() {
                   <td>{getSeverityBadge(policy.severity)}</td>
                   <td>{policy.description || '-'}</td>
                   <td>
-                    <span className={`badge ${policy.enabled ? 'badge-success' : 'badge-secondary'}`}>
-                      {policy.enabled ? 'Enabled' : 'Disabled'}
-                    </span>
+                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
+                      <span className={`badge ${policy.enabled ? 'badge-success' : 'badge-secondary'}`}>
+                        {policy.enabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                      {policy.total_sessions === 0 ? (
+                        <span className="badge badge-secondary">No sessions yet</span>
+                      ) : policy.pending_evaluations > 0 ? (
+                        <span className="badge badge-warning">
+                          {policy.pending_evaluations} not evaluated
+                        </span>
+                      ) : (
+                        <span className="badge badge-success">Up to date</span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
@@ -255,6 +293,7 @@ function PoliciesPage() {
       {showBuilder && (
         <CompositePolicyBuilder
           initialPolicy={editingPolicy}
+          availableTools={availableTools}
           onClose={() => {
             setShowBuilder(false);
             setEditingPolicy(null);

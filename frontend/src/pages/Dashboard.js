@@ -280,8 +280,8 @@ function Dashboard({ mode = 'observability' }) {
     return (
       <div className="dashboard">
         {/* Create Agent Button */}
-        <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'flex-end', paddingRight: '2rem', minHeight: '42px' }}>
-          {isDesignMode && (
+        {isDesignMode && (
+          <div className="agent-actions">
             <button
               className="btn btn-primary"
               onClick={() => setShowCreateAgentModal(true)}
@@ -289,8 +289,8 @@ function Dashboard({ mode = 'observability' }) {
             >
               + Create New Agent
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         <div className="agent-grid">
           {agents.map(agent => (

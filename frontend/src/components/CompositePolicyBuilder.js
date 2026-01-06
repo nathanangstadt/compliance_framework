@@ -9,7 +9,7 @@ const CHECK_TYPES = {
     description: 'Detect when a specific tool is called with certain parameters',
     color: '#4CAF50',
     fields: [
-      { name: 'tool_name', label: 'Tool Name', type: 'text', required: true, placeholder: 'e.g., create_invoice' },
+      { name: 'tool_name', label: 'Tool Name', type: 'tool', required: true, placeholder: 'e.g., create_invoice' },
       { name: 'params', label: 'Parameter Conditions', type: 'params', help: 'Optional: Add conditions for tool parameters' }
     ],
     example: 'Detect when create_invoice is called with total > 1000'
@@ -20,7 +20,7 @@ const CHECK_TYPES = {
     description: 'Validate the response/output from a tool',
     color: '#2196F3',
     fields: [
-      { name: 'tool_name', label: 'Tool Name', type: 'text', required: true, placeholder: 'e.g., get_customer' },
+      { name: 'tool_name', label: 'Tool Name', type: 'tool', required: true, placeholder: 'e.g., get_customer' },
       { name: 'parameter', label: 'Response Field', type: 'text', required: true, placeholder: 'e.g., status' },
       { name: 'expected_value', label: 'Expected Value', type: 'text', placeholder: 'Optional' }
     ],
@@ -32,14 +32,14 @@ const CHECK_TYPES = {
     description: 'Use AI to semantically validate a tool response parameter',
     color: '#9C27B0',
     fields: [
-      { name: 'tool_name', label: 'Tool Name', type: 'text', required: true, placeholder: 'e.g., request_human_approval' },
+      { name: 'tool_name', label: 'Tool Name', type: 'tool', required: true, placeholder: 'e.g., request_human_approval' },
       { name: 'parameter', label: 'Response Field', type: 'text', required: true, placeholder: 'e.g., status' },
       { name: 'validation_prompt', label: 'Validation Prompt', type: 'textarea', required: true, placeholder: 'Tell the AI what to check for...' },
       { name: 'llm_provider', label: 'AI Provider', type: 'select', options: [
-        { value: 'anthropic', label: 'Anthropic Claude' },
-        { value: 'openai', label: 'OpenAI GPT' }
-      ], defaultValue: 'anthropic' },
-      { name: 'model', label: 'Model', type: 'text', placeholder: 'claude-sonnet-4-5-20250929' }
+        { value: 'openai', label: 'OpenAI GPT' },
+        { value: 'anthropic', label: 'Anthropic Claude' }
+      ], defaultValue: 'openai' },
+      { name: 'model', label: 'Model', type: 'text', placeholder: 'gpt-4o' }
     ],
     example: 'Validate that approval status actually means "approved" (not rejected)'
   },
@@ -60,7 +60,7 @@ const CHECK_TYPES = {
     description: 'Limit how many times a tool can be called',
     color: '#F44336',
     fields: [
-      { name: 'tool_name', label: 'Tool Name', type: 'text', required: true, placeholder: 'e.g., request_human_approval' },
+      { name: 'tool_name', label: 'Tool Name', type: 'tool', required: true, placeholder: 'e.g., request_human_approval' },
       { name: 'min_count', label: 'Minimum Count', type: 'number', placeholder: 'Optional' },
       { name: 'max_count', label: 'Maximum Count', type: 'number', placeholder: 'Optional' }
     ],
@@ -74,10 +74,10 @@ const CHECK_TYPES = {
     fields: [
       { name: 'validation_prompt', label: 'Validation Prompt', type: 'textarea', required: true, placeholder: 'What should the AI check in the response?' },
       { name: 'llm_provider', label: 'AI Provider', type: 'select', options: [
-        { value: 'anthropic', label: 'Anthropic Claude' },
-        { value: 'openai', label: 'OpenAI GPT' }
-      ], defaultValue: 'anthropic' },
-      { name: 'model', label: 'Model', type: 'text', placeholder: 'claude-sonnet-4-5-20250929' }
+        { value: 'openai', label: 'OpenAI GPT' },
+        { value: 'anthropic', label: 'Anthropic Claude' }
+      ], defaultValue: 'openai' },
+      { name: 'model', label: 'Model', type: 'text', placeholder: 'gpt-4o' }
     ],
     example: 'Check response for PII, inappropriate tone, or factual errors'
   },
@@ -98,7 +98,7 @@ const CHECK_TYPES = {
     description: 'Ensure a specific tool is NOT called',
     color: '#E91E63',
     fields: [
-      { name: 'tool_name', label: 'Forbidden Tool Name', type: 'text', required: true, placeholder: 'e.g., delete_customer' }
+      { name: 'tool_name', label: 'Forbidden Tool Name', type: 'tool', required: true, placeholder: 'e.g., delete_customer' }
     ],
     example: 'Forbid calling delete_customer tool'
   }
@@ -146,7 +146,7 @@ const VIOLATION_LOGIC_TYPES = {
   }
 };
 
-function CompositePolicyBuilder({ onSave, onClose, initialPolicy = null }) {
+function CompositePolicyBuilder({ onSave, onClose, initialPolicy = null, availableTools = [] }) {
   const [policyName, setPolicyName] = useState(initialPolicy?.name || '');
   const [policyDescription, setPolicyDescription] = useState(initialPolicy?.description || '');
   const [severity, setSeverity] = useState(initialPolicy?.severity || 'error');
@@ -472,6 +472,7 @@ function CompositePolicyBuilder({ onSave, onClose, initialPolicy = null }) {
         {editingCheck && (
           <CheckEditorModal
             check={editingCheck}
+            availableTools={availableTools}
             onSave={(check) => saveCheck(check, editingCheckRole)}
             onClose={() => {
               setEditingCheck(null);
@@ -551,11 +552,40 @@ function CheckSelectorModal({ onSelect, onClose, role }) {
 }
 
 // Check Editor Modal
-function CheckEditorModal({ check, onSave, onClose }) {
+function CheckEditorModal({ check, onSave, onClose, availableTools = [] }) {
   const [editedCheck, setEditedCheck] = useState({ ...check });
   const [showParamInput, setShowParamInput] = useState(false);
   const [newParamName, setNewParamName] = useState('');
+  const [customToolSelection, setCustomToolSelection] = useState(() => {
+    const initial = {};
+    const toolNames = (availableTools || []).map(t => t.toString());
+    CHECK_TYPES[check.type]?.fields
+      ?.filter(f => f.type === 'tool')
+      .forEach(f => {
+        const val = check[f.name];
+        if (val && toolNames.length && !toolNames.includes(val)) {
+          initial[f.name] = true;
+        }
+      });
+    return initial;
+  });
   const checkType = CHECK_TYPES[check.type];
+
+  // Keep local state in sync if user opens a different check
+  React.useEffect(() => {
+    setEditedCheck({ ...check });
+    const toolNames = (availableTools || []).map(t => t.toString());
+    const initial = {};
+    CHECK_TYPES[check.type]?.fields
+      ?.filter(f => f.type === 'tool')
+      .forEach(f => {
+        const val = check[f.name];
+        if (val && toolNames.length && !toolNames.includes(val)) {
+          initial[f.name] = true;
+        }
+      });
+    setCustomToolSelection(initial);
+  }, [check, availableTools]);
 
   const updateField = (fieldName, value) => {
     setEditedCheck({ ...editedCheck, [fieldName]: value });
@@ -668,6 +698,61 @@ function CheckEditorModal({ check, onSave, onClose }) {
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
+              )}
+
+              {field.type === 'tool' && (
+                <>
+                  {Array.isArray(availableTools) && availableTools.length > 0 ? (
+                    <>
+                      <select
+                        value={
+                          customToolSelection[field.name]
+                            ? '__custom'
+                            : (editedCheck[field.name] || '')
+                        }
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === '__custom') {
+                            setCustomToolSelection(prev => ({ ...prev, [field.name]: true }));
+                            if (!editedCheck[field.name]) {
+                              updateField(field.name, '');
+                            }
+                          } else {
+                            setCustomToolSelection(prev => ({ ...prev, [field.name]: false }));
+                            updateField(field.name, val);
+                          }
+                        }}
+                        className="form-input"
+                      >
+                        <option value="">Select a tool</option>
+                        {availableTools.map(tool => (
+                          <option key={tool} value={tool}>{tool}</option>
+                        ))}
+                        <option value="__custom">Other / custom tool</option>
+                      </select>
+                      {(customToolSelection[field.name] ||
+                        (editedCheck[field.name] &&
+                          !availableTools.includes(editedCheck[field.name]))) && (
+                        <input
+                          type="text"
+                          value={editedCheck[field.name] || ''}
+                          onChange={(e) => updateField(field.name, e.target.value)}
+                          placeholder={field.placeholder || 'Enter tool name'}
+                          className="form-input"
+                          style={{ marginTop: '0.5rem' }}
+                        />
+                      )}
+                    </>
+                  ) : (
+                    <input
+                      type="text"
+                      value={editedCheck[field.name] || ''}
+                      onChange={(e) => updateField(field.name, e.target.value)}
+                      placeholder={field.placeholder || 'e.g., create_invoice'}
+                      className="form-input"
+                    />
+                  )}
+                </>
               )}
 
               {field.type === 'params' && (

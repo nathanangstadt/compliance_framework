@@ -51,6 +51,9 @@ class PolicyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     _nocode_nodes: Optional[List[Dict[str, Any]]] = None
+    evaluated_sessions: Optional[int] = None  # How many sessions have up-to-date evaluations for this policy
+    total_sessions: Optional[int] = None      # Total sessions for the agent
+    pending_evaluations: Optional[int] = None  # Sessions needing evaluation (total - evaluated_sessions)
 
     class Config:
         from_attributes = True
@@ -277,14 +280,22 @@ class CreateAgentRequest(BaseModel):
     business_identifiers: Optional[str] = Field(None, description="Natural language description of business identifiers")
     ensure_tools: Optional[List[str]] = Field(None, description="Tool names that must be included in generated list")
     generate_policies: bool = Field(default=False, description="Whether to generate suggested policies for this agent")
-    llm_provider: str = Field(default="anthropic", description="LLM provider: 'anthropic' or 'openai'")
-    model: str = Field(default="claude-sonnet-4-5-20250929", description="Model identifier")
+    llm_provider: str = Field(default="openai", description="LLM provider: 'openai' or 'anthropic'")
+    model: str = Field(default="gpt-4o", description="Model identifier")
+
+
+class ToolDefinition(BaseModel):
+    """Tool definition including payload hints."""
+    name: str
+    description: str
+    inputs: Dict[str, Any] = Field(default_factory=dict, description="Input payload schema/fields")
+    outputs: Dict[str, Any] = Field(default_factory=dict, description="Output payload schema/fields")
 
 
 class AgentConfigResponse(BaseModel):
     """LLM-generated agent configuration."""
     use_case: str = Field(..., description="Structured description of agent's purpose")
-    tools: List[Dict[str, str]] = Field(..., description="List of tool objects with name and description")
+    tools: List[ToolDefinition] = Field(..., description="List of tool objects with name/description and IO schemas")
     business_identifiers: Dict[str, str] = Field(..., description="Business identifier fields and descriptions")
 
 

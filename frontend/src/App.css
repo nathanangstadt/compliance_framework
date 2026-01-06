@@ -1540,6 +1540,16 @@ body {
 }
 
 /* Agent Selection Page */
+.agent-actions {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto 1.5rem;
+  padding: 0 2rem;
+  min-height: 42px;
+}
+
 .agent-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));

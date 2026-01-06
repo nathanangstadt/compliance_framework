@@ -11,26 +11,26 @@ def calculate_llm_cost(model: str, input_tokens: int, output_tokens: int) -> flo
     Calculate the cost of an LLM API call based on model pricing.
 
     Pricing as of January 2025 (per million tokens):
+    - GPT-4o: $2.50 input / $10 output
+    - GPT-4o-mini: $0.150 input / $0.600 output
     - Claude Sonnet 4.5: $3 input / $15 output
     - Claude Opus 4: $15 input / $75 output
     - Claude Haiku 3.5: $0.80 input / $4 output
-    - GPT-4o: $2.50 input / $10 output
-    - GPT-4o-mini: $0.150 input / $0.600 output
 
     Returns cost in USD.
     """
     pricing = {
+        # OpenAI models
+        'gpt-4o': {'input': 2.50, 'output': 10.00},
+        'gpt-4o-mini': {'input': 0.150, 'output': 0.600},
         # Anthropic models
         'claude-sonnet-4-5-20250929': {'input': 3.00, 'output': 15.00},
         'claude-opus-4-20250514': {'input': 15.00, 'output': 75.00},
         'claude-haiku-3-5-20241022': {'input': 0.80, 'output': 4.00},
-        # OpenAI models
-        'gpt-4o': {'input': 2.50, 'output': 10.00},
-        'gpt-4o-mini': {'input': 0.150, 'output': 0.600},
     }
 
-    # Get pricing for model, default to Sonnet 4.5 if unknown
-    model_pricing = pricing.get(model, pricing['claude-sonnet-4-5-20250929'])
+    # Get pricing for model, default to GPT-4o if unknown
+    model_pricing = pricing.get(model, pricing['gpt-4o'])
 
     # Calculate cost (pricing is per million tokens)
     input_cost = (input_tokens / 1_000_000) * model_pricing['input']

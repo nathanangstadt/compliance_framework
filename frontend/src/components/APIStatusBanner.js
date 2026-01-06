@@ -14,10 +14,18 @@ function APIStatusBanner() {
     try {
       setLoading(true);
       console.log('[APIStatusBanner] Checking API status...');
-      const response = await fetch('http://localhost:8000/api/test/anthropic');
-      const data = await response.json();
-      console.log('[APIStatusBanner] API status:', data);
-      setStatus(data);
+
+      // Prefer OpenAI (default), fall back to Anthropic
+      const openaiResp = await fetch('http://localhost:8000/api/test/openai');
+      const openaiData = await openaiResp.json();
+
+      if (openaiData?.configured) {
+        setStatus({ ...openaiData, provider: 'openai' });
+      } else {
+        const anthropicResp = await fetch('http://localhost:8000/api/test/anthropic');
+        const anthropicData = await anthropicResp.json();
+        setStatus({ ...anthropicData, provider: 'anthropic' });
+      }
     } catch (err) {
       console.error('[APIStatusBanner] Error checking API status:', err);
       setStatus({
@@ -61,20 +69,20 @@ function APIStatusBanner() {
       {expanded && (
         <div className="banner-details">
           <div className="banner-suggestion">
-            <strong>Solution:</strong> {status?.suggestion || 'Configure your Anthropic API key in backend/.env'}
+            <strong>Solution:</strong> {status?.suggestion || 'Configure your OpenAI API key in backend/.env (OPENAI_API_KEY). If using Anthropic models, also set ANTHROPIC_API_KEY.'}
           </div>
 
           <div className="banner-actions">
             <a
-              href="https://console.anthropic.com/settings/plans"
+              href={status?.provider === 'anthropic' ? 'https://console.anthropic.com/settings/plans' : 'https://platform.openai.com/account/billing/overview'}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-primary"
             >
-              Add Credits to Anthropic Account
+              Add Credits
             </a>
             <a
-              href="https://console.anthropic.com/settings/keys"
+              href={status?.provider === 'anthropic' ? 'https://console.anthropic.com/settings/keys' : 'https://platform.openai.com/account/api-keys'}
               target="_blank"
               rel="noopener noreferrer"
               className="btn btn-secondary"
@@ -91,9 +99,7 @@ function APIStatusBanner() {
 
           <div className="banner-help">
             <strong>Note:</strong> LLM-based checks (🤖 LLM Tool Response, 🔍 LLM Response Validation)
-            require a working Anthropic API key. Other check types will work without it.
-            <br/><br/>
-            See <code>SETUP_API_KEYS.md</code> for detailed setup instructions.
+            require a working API key for the selected provider (OpenAI by default). See <code>SETUP_API_KEYS.md</code> for setup steps.
           </div>
 
           {status?.error && (

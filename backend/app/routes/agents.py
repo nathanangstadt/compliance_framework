@@ -5,7 +5,7 @@ Provides endpoints to list available agents and get agent details.
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 import shutil
 import json
@@ -40,6 +40,7 @@ class AgentResponse(BaseModel):
     use_case: str | None = None
     llm_provider: str | None = None
     llm_model: str | None = None
+    tools: Optional[list] = None
 
 
 def _load_agent_metadata(agent_id: str):
@@ -57,6 +58,7 @@ def _load_agent_metadata(agent_id: str):
             "use_case": data.get("use_case"),
             "llm_provider": llm_config.get("provider"),
             "llm_model": llm_config.get("model"),
+            "tools": data.get("tools"),
         }
     except Exception:
         return {}
@@ -426,15 +428,29 @@ def generate_sessions_background(
         if not scenarios:
             scenarios = ["standard workflow", "high priority request", "complex case with multiple steps"]
 
+        # Start numbering after existing sessions (use numeric prefix before "__" in filenames)
+        existing_memories = memory_loader.list_memories(agent_id=agent_id)
+        max_existing_num = 0
+        for mem in existing_memories:
+            try:
+                prefix = mem["id"].split("__", 1)[0]
+                num = int(prefix)
+                if num > max_existing_num:
+                    max_existing_num = num
+            except (ValueError, AttributeError, KeyError):
+                continue
+
         for i in range(request.num_sessions):
             try:
                 # Select scenario hint (cycle through if more sessions than scenarios)
                 scenario_hint = scenarios[i % len(scenarios)] if scenarios else None
 
+                session_number = max_existing_num + i + 1
+
                 # Generate session
                 session_data = generator.generate_session(
                     agent_metadata=agent_metadata,
-                    session_number=i + 1,
+                    session_number=session_number,
                     scenario_hint=scenario_hint
                 )
 
@@ -452,7 +468,7 @@ def generate_sessions_background(
                 # Clean scenario hint for filename
                 scenario_clean = scenario_hint.replace(" ", "_")[:30] if scenario_hint else "STANDARD"
 
-                filename = f"{i+1:05d}__{biz_id_str}__{scenario_clean}.json"
+                filename = f"{session_number:05d}__{biz_id_str}__{scenario_clean}.json"
                 # Ensure filename isn't too long
                 if len(filename) > 200:
                     filename = filename[:190] + ".json"

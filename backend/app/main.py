@@ -8,10 +8,13 @@ from app.routes import memories, policies, compliance, test, agent_variants, job
 
 app = FastAPI(title="Policy Compliance Framework")
 
-# CORS middleware
+# CORS middleware (cover localhost and 127.0.0.1 for dev)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

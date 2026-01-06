@@ -15,7 +15,7 @@ from openai import OpenAI
 class AgentGenerator:
     """Generate agent configurations and simulated sessions using LLM."""
 
-    def __init__(self, llm_provider: str = "anthropic", model: str = "claude-sonnet-4-5-20250929"):
+    def __init__(self, llm_provider: str = "openai", model: str = "gpt-4o"):
         """
         Initialize the agent generator.
 
@@ -71,7 +71,11 @@ Generate a JSON configuration with:
 1. "use_case": A clear, structured description of what this agent does (2-3 sentences)
 2. "tools": A list of 5-12 tool objects, each with:
    - "name": snake_case tool name (e.g., "get_customer_account", "check_inventory", "send_notification")
-   - "description": Brief description of what the tool does
+   - "description": Brief description of what the tool does, including inputs/outputs
+   - "inputs": JSON-style schema describing expected fields and example values
+   - "outputs": JSON-style schema describing returned fields and example values (include any evaluation prompts/criteria for LLM-backed tools)
+   - If a step requires natural language judgment or summarization, add an LLM-backed tool (e.g., "..._validation") and include the evaluation prompt/criteria in description/outputs.
+   - If a step needs deterministic checks (e.g., a status field must equal "success"), add a tool that performs that check and describe the condition in description/outputs.
    - If tools were specified in TOOLS INPUT, use those names
    - If REQUIRED TOOLS are specified, ensure they are included
    - Make tool names realistic and domain-appropriate for the use case
@@ -81,7 +85,7 @@ Generate a JSON configuration with:
 Output ONLY valid JSON in this exact format:
 {{
   "use_case": "...",
-  "tools": [{{"name": "tool_name", "description": "..."}}, ...],
+  "tools": [{{"name": "tool_name", "description": "...", "inputs": {{"field": "description or example"}}, "outputs": {{"field": "description or example"}}}}, ...],
   "business_identifiers": {{"field": "description", ...}}
 }}
 
@@ -106,10 +110,14 @@ Do not include markdown code blocks or any text outside the JSON. Output raw JSO
             if not isinstance(config["business_identifiers"], dict) or len(config["business_identifiers"]) < 2:
                 raise ValueError("Invalid business_identifiers - expected at least 2 fields")
 
-            # Validate each tool has name and description
+            # Validate each tool has name/description and input/output hints
             for i, tool in enumerate(config["tools"]):
                 if not isinstance(tool, dict) or "name" not in tool or "description" not in tool:
                     raise ValueError(f"Tool {i} missing 'name' or 'description' fields")
+                if "inputs" not in tool or not isinstance(tool["inputs"], dict):
+                    raise ValueError(f"Tool {i} missing 'inputs' schema")
+                if "outputs" not in tool or not isinstance(tool["outputs"], dict):
+                    raise ValueError(f"Tool {i} missing 'outputs' schema")
 
             return config
 
@@ -150,12 +158,10 @@ Generate compliance policies that are appropriate for this agent's workflow. Con
 1. Tool usage patterns that require approval or validation
 2. Data privacy and PII concerns
 3. Response quality and safety
-4. Business logic constraints
+4. Business logic constraints (include required outputs/fields)
 5. Error handling and edge cases
 
-Create 3-5 policies covering different aspects. ALL policies MUST be type "composite".
-
-The policy_type MUST always be "composite". The config MUST have this exact structure:
+Create 3-5 policies covering different aspects. policy_type is always "composite". The config MUST have this exact structure:
 {{
   "checks": [
     {{"id": "check_1", "type": "tool_call", "name": "Check Description", "tool_name": "...", ...}},
@@ -168,14 +174,23 @@ The policy_type MUST always be "composite". The config MUST have this exact stru
   }}
 }}
 
-Check types available:
+Check types available (aligned with the UI):
 - tool_call: {{"id": "check_1", "type": "tool_call", "name": "...", "tool_name": "...", "params_filter": {{...}}}}
 - tool_response: {{"id": "check_2", "type": "tool_response", "name": "...", "tool_name": "...", "response_filter": {{...}}}}
-- response_contains: {{"id": "check_3", "type": "response_contains", "name": "...", "pattern": "...", "message_filter": {{...}}}}
-- tool_call_count: {{"id": "check_4", "type": "tool_call_count", "name": "...", "tool_name": "...", "min": N, "max": N}}
-- response_length: {{"id": "check_5", "type": "response_length", "name": "...", "max_tokens": N}}
-- tool_absence: {{"id": "check_6", "type": "tool_absence", "name": "...", "tool_name": "..."}}
-- llm_check: {{"id": "check_7", "type": "llm_check", "name": "...", "evaluation_prompt": "...", "message_filter": {{}}, "llm_provider": "anthropic", "model": "claude-sonnet-4-5-20250929"}}
+- llm_tool_response (AI Validated Tool Response): {{"id": "check_3", "type": "llm_tool_response", "name": "...", "tool_name": "...", "parameter": "...", "validation_prompt": "...", "llm_provider": "openai", "model": "gpt-4o"}}
+- response_length: {{"id": "check_4", "type": "response_length", "name": "...", "min_tokens": N, "max_tokens": N}}
+- tool_call_count: {{"id": "check_5", "type": "tool_call_count", "name": "...", "tool_name": "...", "min_count": N, "max_count": N}}
+- response_contains (Agent Response): {{"id": "check_6", "type": "response_contains", "name": "...", "must_contain": "...", "must_not_contain": "..."}}
+- llm_response_validation (AI Validated Agent Response): {{"id": "check_7", "type": "llm_response_validation", "name": "...", "validation_prompt": "...", "llm_provider": "openai", "model": "gpt-4o"}}
+- tool_absence: {{"id": "check_8", "type": "tool_absence", "name": "...", "tool_name": "..."}}
+
+Guidance:
+- Every policy must include a non-empty description (2 sentences) explaining what it enforces.
+- Use the provided tool inputs/outputs to define concrete response filters (e.g., require output.status == "success" AND required fields are non-empty).
+- Ensure each check has a meaningful name and, when applicable, a validation_prompt or response_filter tied to tool outputs.
+- Use llm_tool_response when a tool output needs natural-language validation; include a clear validation_prompt referencing the tool output fields.
+- Use response_length/response_contains/llm_response_validation for the final agent reply when needed.
+- Each policy should have clear triggers and requirements so violation_logic is meaningful and evaluable.
 
 Output ONLY this JSON array (no markdown, no code blocks):
 [
@@ -192,7 +207,7 @@ Output ONLY this JSON array (no markdown, no code blocks):
   ...
 ]
 
-IMPORTANT: policy_type MUST always be "composite". Use different violation_logic types to achieve different behaviors.
+Use different violation_logic types to achieve different behaviors (IF_ANY_THEN_ALL, IF_ALL_THEN_ALL, REQUIRE_ALL, REQUIRE_ANY, FORBID_ALL).
 
 Make policies realistic and relevant to the agent's use case. Use proper JSON syntax. Output raw JSON only."""
 
