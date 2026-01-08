@@ -6,6 +6,7 @@ function GenerateSessionsModal({ agentId, agentName, agentDescription, onClose, 
   const [formData, setFormData] = useState({
     num_sessions: 10,
     scenario_variations: '',
+    session_time_definition: '',
     include_edge_cases: true
   });
   const [loading, setLoading] = useState(false);
@@ -75,6 +76,20 @@ function GenerateSessionsModal({ agentId, agentName, agentDescription, onClose, 
             />
             <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.813rem', display: 'block', marginTop: '0.25rem' }}>
               Comma-separated scenarios to simulate. The LLM will cycle through these to create varied sessions.
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label>Session Timing (optional)</label>
+            <textarea
+              value={formData.session_time_definition}
+              onChange={(e) => setFormData({...formData, session_time_definition: e.target.value})}
+              placeholder="e.g., randomly between Monday-Friday, 08:00-17:00 UTC"
+              rows={2}
+              style={{ fontSize: '0.938rem' }}
+            />
+            <small style={{ color: 'var(--color-text-secondary)', fontSize: '0.813rem', display: 'block', marginTop: '0.25rem' }}>
+              Optional window for session timestamps. Leave blank to auto-spread timestamps across weekdays.
             </small>
           </div>
 

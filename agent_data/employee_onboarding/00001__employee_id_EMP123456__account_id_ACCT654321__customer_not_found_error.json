@@ -1,0 +1,86 @@
+{
+  "metadata": {
+    "session_id": "session_00001",
+    "timestamp": "2026-01-05T10:15:00Z",
+    "duration_seconds": 95.5,
+    "business_identifiers": {
+      "employee_id": "EMP123456",
+      "account_id": "ACCT654321",
+      "approval_request_id": "APPROVAL789012",
+      "document_id": "DOC098765"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need to onboard a new employee, Tom Johnson."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, I can help with that. Let's start with verifying Tom's documents."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01DEF234",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "documents": [
+              {
+                "document_id": "DOC098765",
+                "type": "ID",
+                "file": "tom_johnson_id.pdf"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01DEF234",
+          "content": "{\"status\":\"error\",\"error_message\":\"Customer not found: Unable to verify employee with ID EMP123456.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there was an issue verifying Tom's documents. The system returned an error saying 'Customer not found: Unable to verify employee with ID EMP123456.' Let's engage a human reviewer to assist."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02GHI567",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC098765",
+            "issue": "Customer not found"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02GHI567",
+          "content": "{\"status\":\"pending\",\"review_ticket\":\"TICKET001122\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I've submitted the case for a human review. The review ticket is TICKET001122. We'll update you once it's resolved. Is there anything else I can assist you with in the meantime?"
+    }
+  ]
+}

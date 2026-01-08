@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "session_id": "session_00003",
+    "timestamp": "2026-01-06T14:31:12Z",
+    "duration_seconds": 75.4,
+    "business_identifiers": {
+      "employee_id": "EMP12345",
+      "account_id": "ACC67890",
+      "approval_request_id": "APP54321",
+      "document_id": "DOC09876"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I'm trying to complete the onboarding for John Doe, and I think there may be an issue with the payment authorization."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let's start by verifying the documents submitted for John Doe. I'll check if the payment issue is affecting the document verification process."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP12345",
+            "document_id": "DOC09876"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"success\", \"message\": \"Documents verified successfully.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The documents have been verified successfully. Next, I'll create an employee account for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"failed\", \"error\": \"Payment authorization failed. Account creation cannot proceed until the issue is resolved.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems the account creation failed due to a payment authorization issue. I will need to send this for approval from a manager to resolve the payment problem."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "send_for_approval",
+          "input": {
+            "employee_id": "EMP12345",
+            "approval_request_id": "APP54321",
+            "reason": "Payment authorization failed during account creation."
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"pending\", \"message\": \"Approval request sent to manager.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The payment authorization issue has been escalated for approval. The manager will look into this matter. Meanwhile, our system will automatically notify you once the issue is resolved. Please let me know if there is anything else I can assist you with."
+    }
+  ]
+}

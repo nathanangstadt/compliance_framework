@@ -54,8 +54,10 @@ export const complianceAPI = {
 export const agentVariantsAPI = {
   list: (agentId, refresh = false) => api.get(`/api/agent-variants/${agentId}/`, { params: { refresh } }),
   get: (agentId, id) => api.get(`/api/agent-variants/${agentId}/${id}`),
-  getTransitions: (agentId, variantId = null) => {
-    const params = variantId ? { variant_id: variantId } : {};
+  getTransitions: (agentId, variantIds = []) => {
+    const params = Array.isArray(variantIds) && variantIds.length > 0
+      ? { variant_ids: variantIds.join(',') }
+      : {};
     return api.get(`/api/agent-variants/${agentId}/transitions`, { params });
   },
   refresh: (agentId) => api.post(`/api/agent-variants/${agentId}/refresh`),

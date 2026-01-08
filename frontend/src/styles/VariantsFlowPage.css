@@ -47,22 +47,24 @@
   background: #f7f9fb;
   border: 1px solid var(--color-border-light);
   border-radius: 12px;
-  padding: 1rem;
+  padding: 1rem 1.25rem 1.25rem 1.25rem;
   overflow: auto;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  background-image: radial-gradient(circle at 1px 1px, rgba(17, 24, 39, 0.03) 1px, transparent 0);
+  background-size: 24px 24px;
 }
 
 .flow-node rect {
-  filter: drop-shadow(0 4px 10px rgba(31, 41, 51, 0.08));
+  filter: drop-shadow(0 6px 14px rgba(31, 41, 51, 0.08));
 }
 
 .flow-node-title {
-  font-size: 0.95rem;
-  font-weight: 600;
+  font-size: 0.97rem;
+  font-weight: 700;
   fill: #1f2933;
 }
 .flow-node-title-bold {
-  font-weight: 700;
+  font-weight: 800;
 }
 .flow-node-subtitle {
   font-size: 0.8rem;
@@ -70,13 +72,94 @@
 }
 
 .flow-link-path path {
-  stroke-opacity: 0.75;
+  stroke-opacity: 0.8;
+  transition: stroke-width 0.2s ease, stroke 0.2s ease;
 }
 
 .flow-count {
   fill: #344054;
   font-size: 0.8rem;
   font-weight: 600;
+}
+
+.flow-link-path:hover path {
+  stroke-opacity: 1;
+  stroke: #3b6a99;
+}
+
+.rf-node-card {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 0.2rem;
+  border-radius: 12px;
+  background: transparent;
+}
+
+.rf-node-title {
+  font-size: 0.97rem;
+  font-weight: 700;
+  color: #1f2933;
+}
+
+.rf-node-subtitle {
+  font-size: 0.82rem;
+  color: #6b7280;
+}
+
+.rf-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #1f64b5 !important;
+  border: none !important;
+  opacity: 0.85;
+}
+
+.rf-node-start,
+.rf-node-end {
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.9rem;
+  border: 2px solid;
+}
+
+.rf-node-start {
+  background: #e8f3ed;
+  border-color: #81b29a;
+  color: #2f5f49;
+}
+
+.rf-node-end {
+  background: #fbeaea;
+  border-color: #d97373;
+  color: #8c2f2f;
+}
+
+/* Remove default node chrome from custom nodes */
+.react-flow__node-startNode,
+.react-flow__node-endNode {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Make edges more prominent */
+.react-flow__edge-path {
+  stroke: #1f64b5 !important;
+  stroke-width: 3px !important;
+  opacity: 0.95 !important;
+}
+
+.react-flow__edge {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.08));
 }
 
 .empty-state {
@@ -86,4 +169,118 @@
   padding: 2rem;
   text-align: center;
   color: var(--color-text-secondary);
+}
+
+.variant-filter {
+  background: #fff;
+  border: 1px solid var(--color-border-light);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
+}
+
+.variant-filter-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.variant-filter-panel {
+  border: 1px solid var(--color-border-light);
+  border-radius: 10px;
+  padding: 0.75rem;
+  background: #f8fafc;
+}
+
+.variant-filter-controls {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.filter-title {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.filter-subtitle {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  margin-top: 0.1rem;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.filter-actions-inline {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.variant-filter-controls input {
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  min-width: 200px;
+  background: #f8fafc;
+}
+
+.variant-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 260px;
+  overflow: auto;
+}
+
+.variant-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--color-border-light);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.variant-row input {
+  margin-top: 0.25rem;
+}
+
+.variant-row-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.variant-row-title {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--color-text);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.variant-row-meta {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.variant-row-seq {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+}
+
+.filter-placeholder {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
 }

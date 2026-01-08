@@ -4,7 +4,7 @@ Provides endpoints for analyzing and querying tool usage patterns across agent i
 """
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 from collections import defaultdict
 
 from app.database import get_db
@@ -20,6 +20,36 @@ from app.services.pattern_extractor import pattern_extractor
 from app.services.memory_loader import memory_loader
 
 router = APIRouter(prefix="/api/agent-variants", tags=["agent-variants"])
+
+
+def _compute_transitions_for_variant_ids(agent_id: str, variant_ids: List[int], db: Session) -> dict[tuple[str, str], int]:
+    """
+    Compute tool transition counts scoped to specific variant IDs without mutating the database.
+
+    Loads memories for the variants and recomputes transitions on the fly. Used as a fallback
+    when variant-scoped transitions are missing in the database.
+    """
+    raw_sequences = []
+
+    variants = db.query(AgentVariant).filter(
+        AgentVariant.agent_id == agent_id,
+        AgentVariant.id.in_(variant_ids)
+    ).all()
+
+    memory_ids = set()
+    for v in variants:
+        memory_ids.update(v.memory_ids or [])
+
+    for mem_id in memory_ids:
+        memory = memory_loader.get_memory(agent_id=agent_id, memory_id=mem_id)
+        if not memory:
+            continue
+        messages = memory.get("messages", [])
+        raw_sequence, _ = pattern_extractor.extract_tool_sequence(messages)
+        if raw_sequence:
+            raw_sequences.append(raw_sequence)
+
+    return pattern_extractor.compute_transitions(raw_sequences) if raw_sequences else {}
 
 
 def _compute_and_store_variants(db: Session, agent_id: str) -> None:
@@ -57,7 +87,7 @@ def _compute_and_store_variants(db: Session, agent_id: str) -> None:
         return
 
     # Process each memory to extract patterns
-    pattern_map = defaultdict(list)  # signature -> list of memory_ids
+    pattern_buckets = {}  # signature_hash -> {"signature": PatternSignature, "memory_ids": [...], "sequences": [...]}
     all_raw_sequences = []
 
     for memory_meta in processed_memories:
@@ -75,18 +105,26 @@ def _compute_and_store_variants(db: Session, agent_id: str) -> None:
         normalized = pattern_extractor.normalize_sequence(raw_sequence)
         signature = pattern_extractor.generate_signature(normalized)
 
-        pattern_map[signature.hash].append({
-            "memory_id": memory_meta["id"],
-            "signature": signature
-        })
+        bucket = pattern_buckets.get(signature.hash)
+        if not bucket:
+            bucket = {
+                "signature": signature,
+                "memory_ids": [],
+                "sequences": []
+            }
+            pattern_buckets[signature.hash] = bucket
+
+        bucket["memory_ids"].append(memory_meta["id"])
+        bucket["sequences"].append(raw_sequence)
 
     # Create AgentVariant records
-    for sig_hash, entries in pattern_map.items():
-        if not entries:
+    for sig_hash, bucket in pattern_buckets.items():
+        if not bucket["sequences"]:
             continue
 
-        signature = entries[0]["signature"]
-        memory_ids = [e["memory_id"] for e in entries]
+        signature = bucket["signature"]
+        memory_ids = bucket["memory_ids"]
+        variant_sequences = bucket["sequences"]
 
         # Generate name
         name = pattern_extractor.generate_pattern_name(signature.normalized_sequence)
@@ -101,6 +139,21 @@ def _compute_and_store_variants(db: Session, agent_id: str) -> None:
             tool_count=signature.tool_count
         )
         db.add(variant)
+
+        # Flush to get variant.id for transitions
+        db.flush()
+
+        # Compute transitions for this specific variant
+        variant_transitions = pattern_extractor.compute_transitions(variant_sequences)
+        for (from_tool, to_tool), count in variant_transitions.items():
+            transition = ToolTransition(
+                agent_id=agent_id,
+                from_tool=from_tool,
+                to_tool=to_tool,
+                count=count,
+                variant_id=variant.id
+            )
+            db.add(transition)
 
     db.commit()
 
@@ -176,6 +229,7 @@ async def list_agent_variants(
 @router.get("/{agent_id}/transitions", response_model=ToolTransitionsResponse)
 async def get_tool_transitions(
     agent_id: str,
+    variant_ids: Optional[str] = None,
     variant_id: Optional[int] = None,
     db: Session = Depends(get_db)
 ):
@@ -184,34 +238,62 @@ async def get_tool_transitions(
 
     Args:
         agent_id: The agent identifier
-        variant_id: Optional filter to specific variant (not yet implemented)
+        variant_ids: Optional comma-separated list of variant IDs to filter transitions
+        variant_id: Optional single variant filter (backward compatible)
     """
     # Do NOT auto-compute - transitions should only exist after processing
 
-    # Query transitions (aggregate for now, filtered by agent)
-    query = db.query(ToolTransition).filter(ToolTransition.agent_id == agent_id)
+    # Build variant ID list if provided
+    variant_id_list = []
+    if variant_ids:
+        try:
+            variant_id_list = [int(v.strip()) for v in variant_ids.split(",") if v.strip()]
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid variant_ids parameter")
     if variant_id:
-        query = query.filter(ToolTransition.variant_id == variant_id)
+        variant_id_list.append(variant_id)
+
+    # Query transitions (aggregate if no filter, otherwise scoped to selected variants)
+    query = db.query(ToolTransition).filter(ToolTransition.agent_id == agent_id)
+    if variant_id_list:
+        query = query.filter(ToolTransition.variant_id.in_(variant_id_list))
     else:
         query = query.filter(ToolTransition.variant_id.is_(None))
 
     transitions = query.all()
 
+    # Fallback: if requesting specific variants but no stored transitions, compute inline
+    inline_transitions = {}
+    if variant_id_list and not transitions:
+        inline_transitions = _compute_transitions_for_variant_ids(agent_id, variant_id_list, db)
+
     # Collect unique tools
     unique_tools = set()
     transition_responses = []
 
-    for t in transitions:
-        if t.from_tool != "_start":
-            unique_tools.add(t.from_tool)
-        if t.to_tool != "_end":
-            unique_tools.add(t.to_tool)
+    if inline_transitions:
+        for (from_tool, to_tool), count in inline_transitions.items():
+            if from_tool != "_start":
+                unique_tools.add(from_tool)
+            if to_tool != "_end":
+                unique_tools.add(to_tool)
+            transition_responses.append(ToolTransitionResponse(
+                from_tool=from_tool,
+                to_tool=to_tool,
+                count=count
+            ))
+    else:
+        for t in transitions:
+            if t.from_tool != "_start":
+                unique_tools.add(t.from_tool)
+            if t.to_tool != "_end":
+                unique_tools.add(t.to_tool)
 
-        transition_responses.append(ToolTransitionResponse(
-            from_tool=t.from_tool,
-            to_tool=t.to_tool,
-            count=t.count
-        ))
+            transition_responses.append(ToolTransitionResponse(
+                from_tool=t.from_tool,
+                to_tool=t.to_tool,
+                count=t.count
+            ))
 
     # Sort transitions by count descending
     transition_responses.sort(key=lambda t: t.count, reverse=True)

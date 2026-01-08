@@ -350,6 +350,7 @@ def generate_sessions(
             'agent_metadata': agent_metadata,
             'num_sessions': request.num_sessions,
             'scenario_variations': request.scenario_variations,
+            'session_time_definition': request.session_time_definition,
             'include_edge_cases': request.include_edge_cases,
             'llm_provider': request.llm_provider or agent_metadata['llm_config']['provider'],
             'model': request.model or agent_metadata['llm_config']['model']
@@ -451,7 +452,8 @@ def generate_sessions_background(
                 session_data = generator.generate_session(
                     agent_metadata=agent_metadata,
                     session_number=session_number,
-                    scenario_hint=scenario_hint
+                    scenario_hint=scenario_hint,
+                    session_time_definition=request.session_time_definition
                 )
 
                 # Generate unique filename

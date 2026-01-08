@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "session_id": "session_00004",
+    "timestamp": "2026-01-07T14:32:10Z",
+    "duration_seconds": 95.3,
+    "business_identifiers": {
+      "employee_id": "EMP123456",
+      "account_id": "ACC789101",
+      "approval_request_id": "APR112233",
+      "document_id": "DOC445566"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need to onboard a new employee, John Doe. Can you help with verifying his documents and creating his IT account?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, I can help with that. Let's start by verifying John's documents."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC445566"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\":\"error\",\"message\":\"Service unavailable. Please try again later.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there's a temporary issue with the document verification service. I'll retry shortly. Meanwhile, I'll proceed with creating John's account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\":\"success\",\"account_id\":\"ACC789101\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John's IT account has been successfully created. I'll now check if the document verification service is available."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC445566"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\":\"success\",\"message\":\"Documents verified successfully.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "John's documents were verified successfully, and his IT account has been created. If you need further assistance, feel free to reach out."
+    }
+  ]
+}

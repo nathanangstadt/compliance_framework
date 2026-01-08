@@ -1,0 +1,85 @@
+{
+  "metadata": {
+    "session_id": "session_00006",
+    "timestamp": "2026-01-07T10:32:17Z",
+    "duration_seconds": 65.8,
+    "business_identifiers": {
+      "employee_id": "EMP12345",
+      "account_id": null,
+      "approval_request_id": null,
+      "document_id": "DOC67890"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to onboard a new employee, John Doe. Can you help with the documentation verification?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, I can help with that. I'll start by verifying John's submitted documents."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP12345",
+            "documents": [
+              {
+                "document_id": "DOC67890",
+                "type": "ID",
+                "content": "Base64EncodedContent"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "Error: Customer not found for employee_id EMP12345."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there was an error while trying to verify John's documents due to the employee not being found in the system. Let's try to resolve this."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "issue": "customer not found error during document verification",
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "The issue has been sent to a human reviewer for further investigation."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I've submitted the issue for human review to investigate the missing employee in the system. We should hear back shortly. In the meantime, let me know if there's anything else I can assist with."
+    }
+  ]
+}

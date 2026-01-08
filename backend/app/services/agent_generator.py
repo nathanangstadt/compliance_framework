@@ -249,7 +249,8 @@ Make policies realistic and relevant to the agent's use case. Use proper JSON sy
         self,
         agent_metadata: Dict[str, Any],
         session_number: int,
-        scenario_hint: Optional[str] = None
+        scenario_hint: Optional[str] = None,
+        session_time_definition: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Generate a single simulated session with realistic conversation flow.
@@ -258,6 +259,7 @@ Make policies realistic and relevant to the agent's use case. Use proper JSON sy
             agent_metadata: Agent metadata dict with use_case, tools, business_identifiers
             session_number: Session number (used for ID and varied timestamp)
             scenario_hint: Optional scenario description to focus the session
+            session_time_definition: Optional human-readable constraints for when the session occurs (e.g., "randomly between Monday and Friday, 08:00-17:00 UTC")
 
         Returns:
             Session dict with metadata and messages array in Claude conversation format
@@ -275,6 +277,15 @@ Make policies realistic and relevant to the agent's use case. Use proper JSON sy
         day = (session_number % 28) + 1
         hour = 8 + (session_number % 12)
 
+        time_guidance = "\nSESSION TIME CONSTRAINTS:\n"
+        if session_time_definition:
+            time_guidance += f"- Generate a timestamp within these constraints: {session_time_definition}\n"
+            time_guidance += "- Vary day/time within the allowed window across sessions\n"
+        else:
+            # Fall back to deterministic-but-varied schedule
+            time_guidance += f"- Default to a realistic weekday timestamp: 2026-01-{day:02d}T{hour:02d}:00:00Z (UTC)\n"
+            time_guidance += "- Keep within typical business hours (08:00-19:00 UTC) when possible\n"
+
         prompt = f"""You are simulating a realistic AI agent conversation. Generate a complete session JSON.
 
 AGENT: {agent_metadata["agent_name"]}
@@ -286,6 +297,7 @@ AVAILABLE TOOLS:
 BUSINESS IDENTIFIERS TO POPULATE:
 {json.dumps(biz_ids, indent=2)}
 {scenario_text}
+{time_guidance}
 
 Generate a realistic conversation session with:
 1. A user request that fits the agent's use case
@@ -311,7 +323,7 @@ Output ONLY this JSON structure (no markdown, no code blocks):
 {{
   "metadata": {{
     "session_id": "session_{session_number:05d}",
-    "timestamp": "2026-01-{day:02d}T{hour:02d}:00:00Z",
+    "timestamp": "<ISO 8601 UTC timestamp that satisfies the session time constraints (e.g., 2026-01-{day:02d}T{hour:02d}:00:00Z)>",
     "duration_seconds": <realistic float between 10 and 120>,
     "business_identifiers": {{<populate with realistic values based on the biz_ids schema>}}
   }},

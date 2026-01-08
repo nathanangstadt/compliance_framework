@@ -1,0 +1,102 @@
+{
+  "agent_id": "employee_onboarding",
+  "agent_name": "Employee Onboarding",
+  "description": "Create an agent that performs the back office automation required to onboard a new employee. This is not a chat experience agent but one that runs completely in the back office. It may however engage humans for approvals, exception handling, or clarification through human in the loop tools\nThe Employee Onboarding agent automates the back-office processes involved in bringing a new employee into the organization. It coordinates tasks such as document verification, account creation, and provisioning resources, interacting with humans only for necessary approvals or clarifications.",
+  "use_case": "The Employee Onboarding agent automates back-office operations for onboarding new employees. It handles document verification, account creation, and resource provisioning, engaging humans only for approvals or additional information when necessary.",
+  "tools": [
+    {
+      "name": "verify_documents",
+      "description": "Validates employee documents required for onboarding such as IDs and credentials.",
+      "inputs": {
+        "employee_id": "12345",
+        "documents": "[{\"type\": \"ID\", \"contents\": \"...\"}]"
+      },
+      "outputs": {
+        "is_valid": true,
+        "errors": "[\"ID expired\"]"
+      }
+    },
+    {
+      "name": "create_employee_account",
+      "description": "Creates an employee account in the company's IT system.",
+      "inputs": {
+        "employee_id": "12345",
+        "personal_information": "{\"name\": \"John Doe\", \"email\": \"johndoe@example.com\"}"
+      },
+      "outputs": {
+        "account_status": "success",
+        "account_id": "ac12345"
+      }
+    },
+    {
+      "name": "provision_resources",
+      "description": "Allocates necessary resources such as hardware and software to the new employee.",
+      "inputs": {
+        "employee_id": "12345",
+        "resources": "[\"laptop\", \"email_access\"]"
+      },
+      "outputs": {
+        "provision_status": "success",
+        "provisioned_resources": "[\"laptop\", \"email_access\"]"
+      }
+    },
+    {
+      "name": "send_for_approval",
+      "description": "Sends requests for approval to managers for certain onboarding steps.",
+      "inputs": {
+        "employee_id": "12345",
+        "approval_request": "{\"type\": \"account_creation\", \"details\": \"...\"}"
+      },
+      "outputs": {
+        "approval_status": "pending",
+        "approver_comments": "[]"
+      }
+    },
+    {
+      "name": "human_in_the_loop_validation",
+      "description": "Engages a human reviewer for steps requiring subjective assessment, such as document validation.",
+      "inputs": {
+        "employee_id": "12345",
+        "task": "document review"
+      },
+      "outputs": {
+        "review_status": "complete",
+        "review_comments": "All documents verified."
+      }
+    },
+    {
+      "name": "update_onboarding_status",
+      "description": "Updates the onboarding progress in the central system.",
+      "inputs": {
+        "employee_id": "12345",
+        "current_step": "account_creation"
+      },
+      "outputs": {
+        "update_status": "success",
+        "completion_percentage": 50
+      }
+    },
+    {
+      "name": "check_process_completion",
+      "description": "Checks if all onboarding tasks have been completed successfully.",
+      "inputs": {
+        "employee_id": "12345"
+      },
+      "outputs": {
+        "completion_status": "complete",
+        "missing_tasks": "[]"
+      }
+    }
+  ],
+  "business_identifiers": {
+    "employee_id": "Unique identifier for the employee",
+    "account_id": "Unique identifier for the employee's account",
+    "approval_request_id": "Unique identifier for the approval request",
+    "document_id": "Unique identifier for a specific document"
+  },
+  "llm_config": {
+    "provider": "openai",
+    "model": "gpt-4o"
+  },
+  "created_at": "2026-01-07T19:37:49.584169"
+}

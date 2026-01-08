@@ -1,0 +1,142 @@
+{
+  "metadata": {
+    "session_id": "session_00005",
+    "timestamp": "2026-01-07T14:42:15Z",
+    "duration_seconds": 95.3,
+    "business_identifiers": {
+      "employee_id": "emp_12345",
+      "account_id": "acc_67890",
+      "approval_request_id": "apr_00023",
+      "document_id": "doc_09876"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I'd like to start the onboarding process for a new employee, John Doe."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I can assist with that. First, I will verify the submitted documents for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "emp_12345",
+            "documents": [
+              "passport",
+              "degree_certificate"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"partial_success\", \"warnings\": [\"degree_certificate: unclear institution seal\"], \"verified_documents\": [\"passport\"], \"pending_verification\": [\"degree_certificate\"]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The passport has been verified successfully, but there is an issue with the degree certificate due to an unclear institution seal. I will engage a human reviewer to handle this."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "document_id": "doc_09876",
+            "reason": "unclear institution seal"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"needs_human_action\", \"reviewer_response_eta\": \"2026-01-07T16:00:00Z\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The degree certificate requires human action and will be reviewed by 16:00 UTC. Meanwhile, I will proceed with creating an employee account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "emp_12345",
+            "name": "John Doe"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"success\", \"account_id\": \"acc_67890\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John Doe's employee account has been successfully created. I'll now provision the necessary resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "provision_resources",
+          "input": {
+            "account_id": "acc_67890",
+            "resources": [
+              "laptop",
+              "email",
+              "software_suite"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"status\": \"warning\", \"message\": \"Provisioning software_suite delayed due to license shortage.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "John Doe's laptop and email have been provisioned successfully. However, provisioning of the software suite is delayed due to a license shortage. The document issue is being reviewed and should be resolved by 16:00 UTC. Please check back then for the final status."
+    }
+  ]
+}

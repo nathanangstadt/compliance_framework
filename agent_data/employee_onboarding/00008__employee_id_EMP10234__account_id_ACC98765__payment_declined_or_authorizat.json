@@ -1,0 +1,107 @@
+{
+  "metadata": {
+    "session_id": "session_00008",
+    "timestamp": "2026-01-07T10:45:00Z",
+    "duration_seconds": 87.5,
+    "business_identifiers": {
+      "employee_id": "EMP10234",
+      "account_id": "ACC98765",
+      "approval_request_id": "APR20456",
+      "document_id": "DOC76543"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to onboard a new employee, John Doe. Can you process his documents and create his account?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will start by verifying the documents provided for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP10234",
+            "document_id": "DOC76543"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"pending_approval\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The document verification is pending approval from the manager. Sending for approval now."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "send_for_approval",
+          "input": {
+            "employee_id": "EMP10234",
+            "document_id": "DOC76543",
+            "approval_request_id": "APR20456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "Approval request sent to <manager_email@example.com>"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will proceed to create an account for John Doe while waiting for the document approval."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP10234"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"error\", \"message\": \"Payment declined or authorization failed while creating account\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "There was an error creating the account for John Doe: Payment was declined or authorization failed. Please review the payment method or contact support for further assistance."
+    }
+  ]
+}

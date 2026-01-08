@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "session_id": "session_00010",
+    "timestamp": "2026-01-07T14:15:00Z",
+    "duration_seconds": 95.3,
+    "business_identifiers": {
+      "employee_id": "emp_123456",
+      "account_id": null,
+      "approval_request_id": "apr_789012",
+      "document_id": "doc_345678"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to start the onboarding process for a new employee. Her ID is emp_123456."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let's begin by verifying the necessary documents for employee ID emp_123456."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "emp_123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"partial_success\", \"verified_documents\": [\"identity_card\"], \"warnings\": [\"address_proof_missing\"]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The identity card is verified, but the address proof document is missing. I'll request human validation for further review."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC124",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "employee_id": "emp_123456",
+            "unverified_documents": [
+              "address_proof"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC124",
+          "content": "{\"status\": \"success\", \"note\": \"Human validation initiated.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Human validation for the address proof is underway. I'll proceed with creating the employee account now."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC125",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "emp_123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC125",
+          "content": "{\"status\": \"error\", \"error\": \"Network issue, unable to create account now.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "There was a network issue while creating the employee account. I'll retry the process shortly. Meanwhile, I'll request approval for resource provisioning."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC126",
+          "name": "send_for_approval",
+          "input": {
+            "request_type": "resource_provisioning",
+            "employee_id": "emp_123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC126",
+          "content": "{\"status\": \"success\", \"approval_request_id\": \"apr_789012\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Human validation for the missing document is in progress, and the request for resource provisioning approval has been initiated successfully. We'll address the account creation network issue and complete the onboarding process."
+    }
+  ]
+}

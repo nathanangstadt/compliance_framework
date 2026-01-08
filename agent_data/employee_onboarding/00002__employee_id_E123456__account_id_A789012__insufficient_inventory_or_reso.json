@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "session_id": "session_00002",
+    "timestamp": "2026-01-07T14:23:00Z",
+    "duration_seconds": 85.7,
+    "business_identifiers": {
+      "employee_id": "E123456",
+      "account_id": "A789012",
+      "approval_request_id": "AP345678",
+      "document_id": "D901234"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I'm starting the onboarding process for a new employee. Can you help me with this?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Certainly! To begin with, I'll verify the documents submitted for the employee."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01YZ890",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "E123456",
+            "document_ids": [
+              "D901234"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01YZ890",
+          "content": "{\"status\": \"success\", \"verified_documents\": [\"D901234\"]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The document verification was successful. Next, I'll create the employee's account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02XYZ567",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "E123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02XYZ567",
+          "content": "{\"status\": \"success\", \"account_id\": \"A789012\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The account has been successfully created. Now, I'll provision the necessary resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03PLM347",
+          "name": "provision_resources",
+          "input": {
+            "account_id": "A789012"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03PLM347",
+          "content": "{\"status\": \"error\", \"error\": \"Insufficient inventory for some requested resources.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there is insufficient inventory for some of the requested resources. I'll send this for manager approval to resolve."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JUI765",
+          "name": "send_for_approval",
+          "input": {
+            "approval_type": "resource_insufficiency",
+            "employee_id": "E123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JUI765",
+          "content": "{\"status\": \"success\", \"approval_request_id\": \"AP345678\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I've initiated a request for approval due to the resource insufficiency issue. The manager will review and take appropriate action. Meanwhile, the onboarding status has been updated with this information."
+    }
+  ]
+}

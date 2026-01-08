@@ -312,6 +312,10 @@ class GenerateSessionsRequest(BaseModel):
     """Request to generate simulated sessions for an agent."""
     num_sessions: int = Field(..., ge=1, le=100, description="Number of sessions to generate (1-100)")
     scenario_variations: Optional[str] = Field(None, description="Comma-separated scenario descriptions")
+    session_time_definition: Optional[str] = Field(
+        None,
+        description="Optional time window or schedule to place sessions (e.g., 'randomly between Monday-Friday, 08:00-17:00 UTC')"
+    )
     include_edge_cases: bool = Field(default=True, description="Include error scenarios and edge cases")
     llm_provider: Optional[str] = Field(None, description="Override agent's default LLM provider")
     model: Optional[str] = Field(None, description="Override agent's default model")

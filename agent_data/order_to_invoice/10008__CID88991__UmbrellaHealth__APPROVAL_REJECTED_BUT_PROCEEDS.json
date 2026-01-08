@@ -124,7 +124,7 @@
     {
       "role": "tool",
       "tool_call_id": "toolu_03Step3A",
-      "content": "{\"approval_id\": \"APR-2026-002\", \"status\": \"rejected\", \"approved_by\": \"finance_manager\", \"approved_at\": \"2026-01-01T17:12:00Z\", \"notes\": \"Rejected due to budget constraints.\"}"
+      "content": "{\"approval_id\": \"APR-2026-002\", \"status\": \"The customer has not confirmed delivery or milestone acceptance, so hold invoicing until confirmation is recorded.\", \"approved_by\": \"finance_manager\", \"approved_at\": \"2026-01-01T17:12:00Z\", \"notes\": \"The customer has not confirmed delivery or milestone acceptance, so hold invoicing until confirmation is recorded.\"}"
     },
     {
       "role": "assistant",
