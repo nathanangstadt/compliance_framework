@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "session_id": "session_00012",
+    "timestamp": "2026-01-13T08:00:00Z",
+    "duration_seconds": 98.5,
+    "business_identifiers": {
+      "employee_id": "EMP123456",
+      "account_id": "ACC789012",
+      "approval_request_id": "APR345678",
+      "document_id": "DOC567890"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I'm here to onboard a new employee, John Doe. Could you help me with setting up his account and resources?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Certainly, I will start with verifying John's documents. Please hold on."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC567890"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"success\", \"details\": \"Documents are verified and complete.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John's documents have been successfully verified. I will now create his employee account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"success\", \"account_id\": \"ACC789012\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John's account was successfully created with ID ACC789012. Proceeding to provision resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "provision_resources",
+          "input": {
+            "employee_id": "EMP123456",
+            "account_id": "ACC789012"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"error\", \"message\": \"Insufficient hardware inventory for provisioning.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Unfortunately, there is insufficient hardware inventory to fully provision resources for John. I will send a request for approval to resolve this issue."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "send_for_approval",
+          "input": {
+            "employee_id": "EMP123456",
+            "account_id": "ACC789012",
+            "reason": "Insufficient hardware for provisioning"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"status\": \"queued\", \"approval_request_id\": \"APR345678\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The approval request has been queued under ID APR345678. Once approved, John's resources will be provisioned. Feel free to reach out for updates or any further assistance."
+    }
+  ]
+}

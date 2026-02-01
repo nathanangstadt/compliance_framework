@@ -1,0 +1,142 @@
+{
+  "metadata": {
+    "session_id": "session_00020",
+    "timestamp": "2026-01-21T16:00:00Z",
+    "duration_seconds": 78.5,
+    "business_identifiers": {
+      "employee_id": "EMP20260015",
+      "account_id": "ACC456789",
+      "approval_request_id": "APR20260010",
+      "document_id": "DOC4321"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to onboard a new employee, John Doe. Can you help verify his documents, set up his IT account, and provision resources?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, I can help with that. Let's start with verifying John's documents."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP20260015",
+            "document_ids": [
+              "DOC4321",
+              "DOC4322"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"results\": [{\"document_id\": \"DOC4321\", \"status\": \"verified\"}, {\"document_id\": \"DOC4322\", \"status\": \"pending human review\", \"reason\": \"blurry ID photo\"}]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I've verified one document, but the other requires human review due to a blurry photo. Let's proceed with creating John's IT account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC124",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP20260015",
+            "username": "john.doe"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC124",
+          "content": "{\"account_id\": \"ACC456789\", \"status\": \"created\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John's IT account has been successfully created. Now, let's provision the necessary resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC125",
+          "name": "provision_resources",
+          "input": {
+            "employee_id": "EMP20260015",
+            "account_id": "ACC456789"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC125",
+          "content": "{\"status\": \"partial_success\", \"allocated_resources\": [\"laptop\", \"email\"], \"warnings\": [\"software license pending\"]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I've provisioned a laptop and email account for John, but the software license provisioning encountered a delay. I'll update the onboarding status now."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC126",
+          "name": "update_onboarding_status",
+          "input": {
+            "employee_id": "EMP20260015",
+            "status_updates": {
+              "documents": "partial_success",
+              "account": "complete",
+              "resources": "partial_success with warnings"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC126",
+          "content": "{\"status_update\": \"completed\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The onboarding process for John Doe is mostly complete. Document verification needs human review, and his software licenses are pending. The rest of the onboarding steps were successful. If you have any questions or need further assistance, feel free to ask!"
+    }
+  ]
+}

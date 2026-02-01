@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "session_id": "session_00018",
+    "timestamp": "2026-01-19T14:00:00Z",
+    "duration_seconds": 98.5,
+    "business_identifiers": {
+      "employee_id": "emp_123456",
+      "account_id": "acc_987654",
+      "approval_request_id": "appreq_0008",
+      "document_id": "doc_54321"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need to onboard a new employee. Can you help me verify their documents and set up their account?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Of course! I will begin by verifying the employee's documents."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "emp_123456",
+            "document_id": "doc_54321"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"failure\", \"error\": \"Document verification failed due to missing signatures.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems the document verification failed because of missing signatures. I'll need to send this for human validation."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "employee_id": "emp_123456",
+            "document_id": "doc_54321"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"validated\", \"comment\": \"Missing areas located, signatures required from both employee and manager.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The document has been validated with comments. Signatures from both employee and manager are required. Meanwhile, I'll attempt to create the employee's account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "emp_123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"error\", \"error\": \"Payment declined during account setup transaction.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Unfortunately, there was an issue setting up the employee's account due to a payment being declined. Please check with the finance department to resolve this payment authorization problem before proceeding with the account setup. Once resolved, the account creation process can be retried."
+    }
+  ]
+}

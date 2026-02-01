@@ -1,0 +1,83 @@
+{
+  "metadata": {
+    "session_id": "session_00011",
+    "timestamp": "2026-01-12T19:00:00Z",
+    "duration_seconds": 85.3,
+    "business_identifiers": {
+      "employee_id": "EMP123456",
+      "account_id": "",
+      "approval_request_id": "",
+      "document_id": "DOC789012"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "We need to onboard a new employee, John Doe. Can you help with that?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Certainly! I'll start by verifying the documents for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_1A2B3C",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC789012"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_1A2B3C",
+          "content": "{\"status\": \"success\", \"details\": \"Document verified successfully.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Documents are verified. Now, let's create the employee account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_4D5E6F",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_4D5E6F",
+          "content": "Error: Customer not found."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there was an error creating John Doe's account: Customer not found. This might be due to a missing or incorrect employee record in the system. Please verify the employee details and ensure they are correctly entered into the system."
+        }
+      ]
+    }
+  ]
+}

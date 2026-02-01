@@ -12,6 +12,7 @@ import { ToastProvider } from './components/Toast';
 import { JobProvider } from './context/JobContext';
 import './App.css';
 import VariantsFlowPage from './pages/VariantsFlowPage';
+import HelpWidget from './components/HelpWidget';
 
 function NavbarContent() {
   const location = useLocation();
@@ -305,6 +306,7 @@ function AppContent() {
     <div className="App">
       <NavbarContent />
       {showSidebar && <Sidebar />}
+      <HelpWidget />
 
       <div className={showSidebar ? "main-content" : "main-content-full"}>
         <Routes>

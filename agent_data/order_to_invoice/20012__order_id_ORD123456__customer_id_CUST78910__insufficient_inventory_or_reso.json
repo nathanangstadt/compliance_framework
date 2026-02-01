@@ -1,0 +1,171 @@
+{
+  "metadata": {
+    "session_id": "session_20012",
+    "timestamp": "2026-01-21T16:00:00Z",
+    "duration_seconds": 75.4,
+    "business_identifiers": {
+      "order_id": "ORD123456",
+      "customer_id": "CUST78910",
+      "invoice_id": "INV001234"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Can you process the pending orders and make sure all steps are followed for generating invoices?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let me start by fetching the pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "[{\"order_id\":\"ORD123456\",\"customer_id\":\"CUST78910\",\"items\":[{\"product_id\":\"PROD001\",\"quantity\":5},{\"product_id\":\"PROD002\",\"quantity\":3}],\"total_value\":600.00}]"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I found pending order ORD123456 for customer CUST78910. Next, I'll validate the customer's account status."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST78910"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\":\"active\",\"balance\":100.00}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The customer account is active with a balance of $100. Checking inventory for the order items."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "check_inventory",
+          "input": {
+            "products": [
+              {
+                "product_id": "PROD001",
+                "quantity": 5
+              },
+              {
+                "product_id": "PROD002",
+                "quantity": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"PROD001\":{\"available\":3},\"PROD002\":{\"available\":10}}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "There's insufficient inventory for product PROD001. Requesting a reservation for available items and routing for approval."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "reserve_inventory",
+          "input": {
+            "order_id": "ORD123456",
+            "items": [
+              {
+                "product_id": "PROD001",
+                "quantity": 3
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"result\":\"partial_reservation\",\"reserved\":{\"PROD001\":3}}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Partial reservation made for product PROD001. The high-value order needs approval."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05MNO345",
+          "name": "request_human_approval",
+          "input": {
+            "order_id": "ORD123456",
+            "total_value": 600.0
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05MNO345",
+          "content": "{\"status\":\"approval_requested\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The order ORD123456 is partly reserved. Inventory shortage for product PROD001 was encountered. The order is flagged for approval due to high value. Once approved, the full order details can be processed for invoicing."
+    }
+  ]
+}

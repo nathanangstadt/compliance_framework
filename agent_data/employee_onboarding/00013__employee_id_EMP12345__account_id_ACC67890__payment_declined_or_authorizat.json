@@ -1,0 +1,106 @@
+{
+  "metadata": {
+    "session_id": "session_00013",
+    "timestamp": "2026-01-14T09:00:00Z",
+    "duration_seconds": 58.4,
+    "business_identifiers": {
+      "employee_id": "EMP12345",
+      "account_id": "ACC67890",
+      "approval_request_id": "APPR11122",
+      "document_id": "DOC33344"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I need to onboard a new employee, John Doe. Can you start with verifying the documents?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will start with verifying the documents for John Doe."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "document_id": "DOC33344",
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"verified\", \"employee_id\": \"EMP12345\", \"valid\": true}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Documents for John Doe have been successfully verified. Next, I will create an employee account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"error\", \"message\": \"Payment declined during account creation\", \"employee_id\": \"EMP12345\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "There was an issue creating the employee account for John Doe. The payment for account creation was declined. I'll send it for human review."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "employee_id": "EMP12345",
+            "issue": "Payment declined during account creation"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"in_review\", \"approval_request_id\": \"APPR11122\", \"employee_id\": \"EMP12345\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "John Doe's onboarding is currently pending due to a payment authorization issue with account creation. Human review is underway to resolve this. I will notify you once it's sorted out."
+    }
+  ]
+}

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { complianceAPI, memoryAPI, agentVariantsAPI, agentsAPI } from '../services/api';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, PieChart, Pie, LabelList } from 'recharts';
 import { useToast } from '../components/Toast';
 import CreateAgentModal from '../components/CreateAgentModal';
 import GenerateSessionsModal from '../components/GenerateSessionsModal';
@@ -517,6 +517,34 @@ function Dashboard({ mode = 'observability' }) {
     );
   };
 
+  const renderComplianceRateLabel = (segmentKey) => {
+    return (props) => {
+      const { x, y, width, value, index } = props;
+      const entry = chartData[index];
+      if (!entry || !entry.total) return null;
+
+      const isTopSegment =
+        (segmentKey === 'nonCompliant' && value > 0) ||
+        (segmentKey === 'compliant' && entry.nonCompliant === 0 && value > 0);
+      if (!isTopSegment) return null;
+
+      const percent = Math.round((entry.compliant / entry.total) * 100);
+      const text = `${percent}%`;
+
+      return (
+        <text
+          x={x + width / 2}
+          y={y - 6}
+          textAnchor="middle"
+          fontSize="11"
+          fill="var(--color-text-secondary)"
+        >
+          {text}
+        </text>
+      );
+    };
+  };
+
   // Get activity level color for heatmap
   const getActivityColor = (cell) => {
     const value = cell?.count || 0;
@@ -657,6 +685,7 @@ function Dashboard({ mode = 'observability' }) {
                       {chartData.map((_, index) => (
                         <Cell key={`compliant-${index}`} fill="#81b29a" />
                       ))}
+                      <LabelList content={renderComplianceRateLabel('compliant')} />
                     </Bar>
                     <Bar
                       dataKey="nonCompliant"
@@ -675,6 +704,7 @@ function Dashboard({ mode = 'observability' }) {
                         const color = severityColors[entry.severity] || '#d97373';
                         return <Cell key={`non-compliant-${index}`} fill={color} />;
                       })}
+                      <LabelList content={renderComplianceRateLabel('nonCompliant')} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>

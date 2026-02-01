@@ -1,0 +1,140 @@
+{
+  "metadata": {
+    "session_id": "session_00017",
+    "timestamp": "2026-01-18T13:00:00Z",
+    "duration_seconds": 95.0,
+    "business_identifiers": {
+      "employee_id": "EMP123456",
+      "account_id": "ACC987654",
+      "approval_request_id": "APR345678",
+      "document_id": "DOC789012"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need help with onboarding a new employee, John Doe. Can you assist with the document verification and account creation?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Certainly, I'll start with verifying the documents John Doe submitted."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC789012"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"status\": \"success\", \"message\": \"Documents verified successfully.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The documents have been verified successfully. Now, I'll proceed with creating the employee account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP123456",
+            "email": "john.doe@example.com",
+            "department": "IT"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{\"status\": \"success\", \"account_id\": \"ACC987654\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "John Doe's employee account has been created successfully. Next, let me allocate the necessary resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "provision_resources",
+          "input": {
+            "account_id": "ACC987654",
+            "resource_request": [
+              "laptop",
+              "software_package_A"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{\"status\": \"error\", \"message\": \"Insufficient inventory for laptop.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "There is an issue provisioning the laptop due to insufficient inventory. I will send a request for manual approval to proceed with alternative options."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "send_for_approval",
+          "input": {
+            "employee_id": "EMP123456",
+            "account_id": "ACC987654",
+            "required_alternative": "manual_approval_for_resources"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{\"status\": \"success\", \"approval_request_id\": \"APR345678\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "I've sent an approval request to the relevant department to manage the inventory shortage for the laptop. They will take the necessary actions to ensure John Doe has everything needed for a smooth start."
+    }
+  ]
+}

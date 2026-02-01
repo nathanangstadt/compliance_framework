@@ -1,0 +1,157 @@
+{
+  "metadata": {
+    "session_id": "session_20013",
+    "timestamp": "2026-01-22T17:00:00Z",
+    "duration_seconds": 98.5,
+    "business_identifiers": {
+      "order_id": "ORD123456",
+      "customer_id": "CUST78901",
+      "invoice_id": "INV234567"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Can you process the pending orders and generate invoices for them?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Let's start by retrieving the pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01QWE112",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01QWE112",
+          "content": "{\"orders\": [{\"order_id\": \"ORD123456\", \"customer_id\": \"CUST78901\", \"amount\": 2500.00}]} "
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I found one pending order. Checking the customer's account status now."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02RTY223",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST78901"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02RTY223",
+          "content": "{\"status\": \"active\", \"balance\": 500.00, \"credit_limit\": 1000.00}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The customer's account is active but has a low credit limit. Requesting approval for this high-value order."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03UIO334",
+          "name": "request_human_approval",
+          "input": {
+            "order_id": "ORD123456",
+            "amount": 2500.0,
+            "customer_id": "CUST78901"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03UIO334",
+          "content": "{\"status\": \"approved\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Approval has been granted. I will now reserve the inventory needed for this order."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04PAS445",
+          "name": "reserve_inventory",
+          "input": {
+            "order_id": "ORD123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04PAS445",
+          "content": "{\"status\": \"success\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Inventory reserved successfully. Proceeding to create the invoice."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05DFG556",
+          "name": "create_invoice",
+          "input": {
+            "order_id": "ORD123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05DFG556",
+          "content": "{ \"invoice_id\": \"INV234567\", \"status\": \"created\" }"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The invoice has been successfully created as INV234567. I'll proceed to send the invoice to the customer and update the order status in the ERP system."
+    }
+  ]
+}

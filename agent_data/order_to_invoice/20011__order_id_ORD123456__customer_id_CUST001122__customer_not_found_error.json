@@ -1,0 +1,83 @@
+{
+  "metadata": {
+    "session_id": "session_20011",
+    "timestamp": "2026-01-20T15:00:00Z",
+    "duration_seconds": 85.5,
+    "business_identifiers": {
+      "order_id": "ORD123456",
+      "customer_id": "CUST001122",
+      "invoice_id": "INV987654"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Please process the pending orders and generate invoices."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I'll start by retrieving pending orders."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "get_pending_orders",
+          "input": {}
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "{\"orders\": [{\"order_id\": \"ORD123456\", \"customer_id\": \"CUST001122\"}]}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Fetched orders successfully. Now, I'll check the customer account status for order ORD123456."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC124",
+          "name": "get_customer_account",
+          "input": {
+            "customer_id": "CUST001122"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC124",
+          "content": "Error: Customer ID CUST001122 not found."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there was an error while retrieving the customer information: 'Customer ID CUST001122 not found.' Without this information, I cannot continue processing order ORD123456."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "Please verify the customer ID in your system. I was unable to find customer details for CUST001122 while processing order ORD123456, which prevents me from validating account status and progressing to invoice generation."
+    }
+  ]
+}

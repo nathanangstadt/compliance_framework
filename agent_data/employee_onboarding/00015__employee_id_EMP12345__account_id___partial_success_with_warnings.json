@@ -1,0 +1,116 @@
+{
+  "metadata": {
+    "session_id": "session_00015",
+    "timestamp": "2026-01-16T11:00:00Z",
+    "duration_seconds": 95.5,
+    "business_identifiers": {
+      "employee_id": "EMP12345",
+      "account_id": "",
+      "approval_request_id": "APR67890",
+      "document_id": "DOC112233"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "Hi, I need to start the onboarding process for our new hire, employee ID EMP12345. Can you help with that?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Sure, let's begin by verifying the documents provided by the new employee."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01A",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP12345",
+            "document_id": "DOC112233"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01A",
+          "content": "{\"status\":\"warning\",\"message\":\"Document ID DOC112233 is slightly blurred but still legible.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The document is verified with a warning: it is slightly blurred but legible. Proceeding with account creation next."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02B",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP12345"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02B",
+          "content": "{\"error\":\"Network error encountered during account creation.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "There was a network error while trying to create the employee account. I will retry shortly."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Meanwhile, let's send an approval request for resource provisioning."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03C",
+          "name": "send_for_approval",
+          "input": {
+            "employee_id": "EMP12345",
+            "approval_request_id": "APR67890",
+            "purpose": "Resource Provisioning"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03C",
+          "content": "{\"status\":\"success\",\"approval_request_id\":\"APR67890\",\"message\":\"Approval request sent successfully.\"}"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The approval request for resource provisioning has been sent successfully. Please address the document warning and network issue for account creation if they persist. Let me know if you need further assistance!"
+    }
+  ]
+}

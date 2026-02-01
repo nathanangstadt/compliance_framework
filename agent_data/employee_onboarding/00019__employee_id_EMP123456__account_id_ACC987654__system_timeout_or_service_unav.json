@@ -1,0 +1,191 @@
+{
+  "metadata": {
+    "session_id": "session_00019",
+    "timestamp": "2026-01-20T15:00:00Z",
+    "duration_seconds": 95.5,
+    "business_identifiers": {
+      "employee_id": "EMP123456",
+      "account_id": "ACC987654",
+      "approval_request_id": "APR567890",
+      "document_id": "DOC135792"
+    }
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "I'm submitting the necessary documents for onboarding a new employee. Can you handle the document verification and the rest of the onboarding process?"
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "I will start by verifying the documents submitted for the new employee."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_01ABC123",
+          "name": "verify_documents",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC135792"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_01ABC123",
+          "content": "Error: Document Service timeout. Please try again later."
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "It seems there's a temporary issue with the document verification service. I'll engage a human reviewer to assist with the document verification."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_02DEF456",
+          "name": "human_in_the_loop_validation",
+          "input": {
+            "employee_id": "EMP123456",
+            "document_id": "DOC135792"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_02DEF456",
+          "content": "{ \"status\": \"success\", \"validated_by\": \"HR_Reviewer_01\" }"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The document has been successfully verified by our HR team. Next, I'll proceed with creating the employee's account."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_03GHI789",
+          "name": "create_employee_account",
+          "input": {
+            "employee_id": "EMP123456"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_03GHI789",
+          "content": "{ \"status\": \"success\", \"account_id\": \"ACC987654\" }"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "The employee account has been created successfully. I'll now move on to provision the necessary resources."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_04JKL012",
+          "name": "provision_resources",
+          "input": {
+            "employee_id": "EMP123456",
+            "account_id": "ACC987654"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_04JKL012",
+          "content": "{ \"status\": \"partial_success\", \"details\": \"Hardware allocated; software license pending approval.\" }"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "text",
+          "text": "Some resources have been provisioned, but the software license requires approval. I'll send a request for approval now."
+        },
+        {
+          "type": "tool_use",
+          "id": "toolu_05MNO345",
+          "name": "send_for_approval",
+          "input": {
+            "approval_request_id": "APR567890",
+            "employee_id": "EMP123456",
+            "details": "Software license provisioning"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_05MNO345",
+          "content": "{ \"status\": \"Request Sent\", \"approval_request_id\": \"APR567890\" }"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The software license approval request has been sent. I'll update the onboarding status to reflect the current progress."
+    },
+    {
+      "role": "assistant",
+      "content": [
+        {
+          "type": "tool_use",
+          "id": "toolu_06PQR678",
+          "name": "update_onboarding_status",
+          "input": {
+            "employee_id": "EMP123456",
+            "status": "Pending software license approval"
+          }
+        }
+      ]
+    },
+    {
+      "role": "tool",
+      "content": [
+        {
+          "type": "tool_result",
+          "tool_use_id": "toolu_06PQR678",
+          "content": "{ \"status\": \"updated\" }"
+        }
+      ]
+    },
+    {
+      "role": "assistant",
+      "content": "The onboarding status has been updated. The process will be completed once the software license is approved. Thank you for your patience."
+    }
+  ]
+}

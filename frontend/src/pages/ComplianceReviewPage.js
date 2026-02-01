@@ -7,26 +7,86 @@ import { ViolationSummary } from '../components/ViolationDisplay';
 import { useToast } from '../components/Toast';
 import './MemoryDetailPage.css';
 
+const MODEL_PRICING_PER_MILLION_USD = {
+  // OpenAI models
+  'gpt-4o': { input: 2.50, output: 10.00 },
+  'gpt-4o-mini': { input: 0.150, output: 0.600 },
+  // Anthropic models
+  'claude-sonnet-4-5-20250929': { input: 3.00, output: 15.00 },
+  'claude-opus-4-20250514': { input: 15.00, output: 75.00 },
+  'claude-haiku-3-5-20241022': { input: 0.80, output: 4.00 },
+};
+
 // Session metadata display component
 function SessionInfoPanel({ memory, evaluations }) {
-  // Calculate token counts from messages
-  const tokenStats = useMemo(() => {
-    let inputTokens = 0;
-    let outputTokens = 0;
+  const [selectedModel, setSelectedModel] = useState('gpt-4o');
 
-    memory.messages?.forEach(msg => {
-      if (msg.usage) {
-        inputTokens += msg.usage.input_tokens || 0;
-        outputTokens += msg.usage.output_tokens || 0;
+  const estimatedSessionUsage = useMemo(() => {
+    const estimateTokensFromText = (text) => {
+      if (!text) return 0;
+      const normalized = String(text);
+      return Math.ceil(normalized.length / 4);
+    };
+
+    const extractBlockText = (block) => {
+      if (!block) return '';
+      if (block.type === 'text') return block.text || '';
+      if (block.type === 'tool_use') {
+        const toolName = block.name || '';
+        const input = block.input ?? {};
+        return `${toolName} ${JSON.stringify(input)}`;
+      }
+      if (block.type === 'tool_result') return block.content || '';
+      return JSON.stringify(block);
+    };
+
+    const estimateTokensForMessageContent = (content) => {
+      if (!content) return 0;
+      if (typeof content === 'string') return estimateTokensFromText(content);
+      if (Array.isArray(content)) {
+        const combined = content.map(extractBlockText).join('\n');
+        return estimateTokensFromText(combined);
+      }
+      return estimateTokensFromText(JSON.stringify(content));
+    };
+
+    let estimatedInputTokens = 0;
+    let estimatedOutputTokens = 0;
+    let toolUseCount = 0;
+    let toolResultCount = 0;
+
+    memory.messages?.forEach((msg) => {
+      const tokens = estimateTokensForMessageContent(msg.content);
+      if (msg.role === 'assistant') estimatedOutputTokens += tokens;
+      else estimatedInputTokens += tokens;
+
+      if (Array.isArray(msg.content)) {
+        msg.content.forEach((block) => {
+          if (block?.type === 'tool_use') toolUseCount += 1;
+          if (block?.type === 'tool_result') toolResultCount += 1;
+        });
       }
     });
 
     return {
-      inputTokens,
-      outputTokens,
-      totalTokens: inputTokens + outputTokens
+      estimatedInputTokens,
+      estimatedOutputTokens,
+      estimatedTotalTokens: estimatedInputTokens + estimatedOutputTokens,
+      toolUseCount,
+      toolResultCount,
     };
   }, [memory.messages]);
+
+  const estimatedCost = useMemo(() => {
+    const pricing = MODEL_PRICING_PER_MILLION_USD[selectedModel] || MODEL_PRICING_PER_MILLION_USD['gpt-4o'];
+    const inputCost = (estimatedSessionUsage.estimatedInputTokens / 1_000_000) * pricing.input;
+    const outputCost = (estimatedSessionUsage.estimatedOutputTokens / 1_000_000) * pricing.output;
+    return {
+      inputCost,
+      outputCost,
+      totalCost: inputCost + outputCost,
+    };
+  }, [estimatedSessionUsage.estimatedInputTokens, estimatedSessionUsage.estimatedOutputTokens, selectedModel]);
 
   // Extract tool names used in session
   const toolsUsed = useMemo(() => {
@@ -151,20 +211,43 @@ function SessionInfoPanel({ memory, evaluations }) {
       )}
 
       <div className="info-section">
-        <h4>Token Usage</h4>
+        <h4>Estimated Tokens & Cost</h4>
+        <div style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)', marginTop: '-0.5rem', marginBottom: '0.75rem' }}>
+          Estimated from the stored transcript; assistant messages and tool calls count as output tokens.
+        </div>
         <table className="info-table">
           <tbody>
             <tr>
-              <td className="info-label">Input Tokens</td>
-              <td className="info-value">{tokenStats.inputTokens.toLocaleString()}</td>
+              <td className="info-label">Model Pricing</td>
+              <td className="info-value">
+                <select value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)}>
+                  {Object.keys(MODEL_PRICING_PER_MILLION_USD).map((model) => (
+                    <option key={model} value={model}>{model}</option>
+                  ))}
+                </select>
+              </td>
             </tr>
             <tr>
-              <td className="info-label">Output Tokens</td>
-              <td className="info-value">{tokenStats.outputTokens.toLocaleString()}</td>
+              <td className="info-label">Estimated Input Tokens</td>
+              <td className="info-value">{estimatedSessionUsage.estimatedInputTokens.toLocaleString()}</td>
             </tr>
             <tr>
-              <td className="info-label">Total Tokens</td>
-              <td className="info-value">{tokenStats.totalTokens.toLocaleString()}</td>
+              <td className="info-label">Estimated Output Tokens</td>
+              <td className="info-value">{estimatedSessionUsage.estimatedOutputTokens.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td className="info-label">Estimated Total Tokens</td>
+              <td className="info-value">{estimatedSessionUsage.estimatedTotalTokens.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td className="info-label">Estimated Cost</td>
+              <td className="info-value">
+                {estimatedCost.totalCost.toLocaleString('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 4, maximumFractionDigits: 6 })}
+              </td>
+            </tr>
+            <tr>
+              <td className="info-label">Tool Calls / Results</td>
+              <td className="info-value">{estimatedSessionUsage.toolUseCount} / {estimatedSessionUsage.toolResultCount}</td>
             </tr>
           </tbody>
         </table>
