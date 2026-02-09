@@ -1,0 +1,39 @@
+html,
+body {
+	height: 100%;
+	margin: 0;
+	background: #eee;
+}
+
+#page {
+	overflow: hidden;
+}
+
+.cookie-preferences {
+	font-size: 14px;
+	position: absolute;
+	bottom: 0;
+	background-color: var(--oj-palette-neutral-rgb-170) !important;
+	padding-bottom: 5px;
+	border-radius: 0 4px;
+	font-family: "Oracle Sans";
+	display: none;
+	min-width: 252px;
+	text-align: center;
+}
+
+.cookie-preferences a {
+	color: #c0c4c8;
+}
+
+.cookie-preferences a:hover {
+	color: #c0c4c8;
+	border: none;
+	text-decoration: underline;
+}
+
+.cookie-preferences a:active {
+	color: #FFFFFF;
+	border: none;
+	text-decoration: underline;
+}

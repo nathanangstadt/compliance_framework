@@ -1,0 +1,243 @@
+/* Copyright (c) 2023, Oracle and/or its affiliates */
+
+/********************** GENERIC THEME CSS ***********************/
+:root {
+  --oj-sp-theme-global-bkgd-banner-height: 270px;
+
+  /* Lilac Brand color ramp */
+  --oj-sp-rw-lilac-rgb-10: 248, 249, 255;
+  --oj-sp-rw-lilac-rgb-20: 242, 244, 254;
+  --oj-sp-rw-lilac-rgb-30: 235, 239, 254;
+  --oj-sp-rw-lilac-rgb-40: 219, 225, 235;
+  --oj-sp-rw-lilac-rgb-50: 198, 207, 235;
+  --oj-sp-rw-lilac-rgb-60: 173, 182, 210;
+  --oj-sp-rw-lilac-rgb-70: 160, 169, 197;
+  --oj-sp-rw-lilac-rgb-80: 143, 152, 183;
+  --oj-sp-rw-lilac-rgb-90: 124, 133, 164;
+  --oj-sp-rw-lilac-rgb-100: 107, 116, 148;
+  --oj-sp-rw-lilac-rgb-110: 92, 105, 136;
+  --oj-sp-rw-lilac-rgb-120: 88, 95, 128;
+  --oj-sp-rw-lilac-rgb-130: 79, 85, 115;
+  --oj-sp-rw-lilac-rgb-140: 70, 76, 104;
+  --oj-sp-rw-lilac-rgb-150: 60, 66, 91;
+  --oj-sp-rw-lilac-rgb-160: 48, 54, 76;
+  --oj-sp-rw-lilac-rgb-170: 42, 45, 63;
+
+  /* Blue Brand color ramp */
+  --oj-sp-rw-blue-rgb-10: 246, 250, 252;
+  --oj-sp-rw-blue-rgb-20: 237, 246, 249;
+  --oj-sp-rw-blue-rgb-30: 288, 241, 247;
+  --oj-sp-rw-blue-rgb-40: 208, 229, 238;
+  --oj-sp-rw-blue-rgb-50: 180, 213, 225;
+  --oj-sp-rw-blue-rgb-60: 143, 191, 208;
+  --oj-sp-rw-blue-rgb-70: 121, 177, 198;
+  --oj-sp-rw-blue-rgb-80: 95, 162, 186;
+  --oj-sp-rw-blue-rgb-90: 65, 144, 172;
+  --oj-sp-rw-blue-rgb-100: 34, 126, 158;
+  --oj-sp-rw-blue-rgb-110: 14, 114, 149;
+  --oj-sp-rw-blue-rgb-120: 0, 104, 140;
+  --oj-sp-rw-blue-rgb-130: 2, 94, 126;
+  --oj-sp-rw-blue-rgb-140: 4, 83, 111;
+  --oj-sp-rw-blue-rgb-150: 6, 72, 95;
+  --oj-sp-rw-blue-rgb-160: 6, 60, 78;
+  --oj-sp-rw-blue-rgb-170: 5, 50, 66;
+
+  /* Ocean Brand color ramp */
+  --oj-sp-rw-ocean-rgb-10: 255, 250, 252;
+  --oj-sp-rw-ocean-rgb-20: 237, 246, 249;
+  --oj-sp-rw-ocean-rgb-30: 231, 242, 245;
+  --oj-sp-rw-ocean-rgb-40: 208, 229, 237;
+  --oj-sp-rw-ocean-rgb-50: 181, 213, 224;
+  --oj-sp-rw-ocean-rgb-60: 148, 191, 206;
+  --oj-sp-rw-ocean-rgb-70: 129, 178, 195;
+  --oj-sp-rw-ocean-rgb-80: 107, 161, 182;
+  --oj-sp-rw-ocean-rgb-90: 85, 142, 164;
+  --oj-sp-rw-ocean-rgb-100: 67, 124, 148;
+  --oj-sp-rw-ocean-rgb-110: 59, 112, 135;
+  --oj-sp-rw-ocean-rgb-120: 54, 103, 125;
+  --oj-sp-rw-ocean-rgb-130: 50, 92, 114;
+  --oj-sp-rw-ocean-rgb-140: 44, 82, 102;
+  --oj-sp-rw-ocean-rgb-150: 38, 71, 89;
+  --oj-sp-rw-ocean-rgb-160: 31, 58, 75;
+  --oj-sp-rw-ocean-rgb-170: 26, 47, 63;
+
+  /* Pebble Brand color ramp */
+  --oj-sp-rw-pebble-rgb-10: 246, 250, 255;
+  --oj-sp-rw-pebble-rgb-20: 238, 245, 255;
+  --oj-sp-rw-pebble-rgb-30: 231, 240, 253;
+  --oj-sp-rw-pebble-rgb-40: 218, 226, 239;
+  --oj-sp-rw-pebble-rgb-50: 200, 208, 221;
+  --oj-sp-rw-pebble-rgb-60: 176, 184, 196;
+  --oj-sp-rw-pebble-rgb-70: 162, 170, 182;
+  --oj-sp-rw-pebble-rgb-80: 146, 153, 166;
+  --oj-sp-rw-pebble-rgb-90: 128, 135, 146;
+  --oj-sp-rw-pebble-rgb-100: 111, 117, 126;
+  --oj-sp-rw-pebble-rgb-110: 100, 106, 115;
+  --oj-sp-rw-pebble-rgb-120: 92, 97, 105;
+  --oj-sp-rw-pebble-rgb-130: 83, 87, 95;
+  --oj-sp-rw-pebble-rgb-140: 73, 77, 83;
+  --oj-sp-rw-pebble-rgb-150: 63, 66, 72;
+  --oj-sp-rw-pebble-rgb-160: 52, 54, 59;
+  --oj-sp-rw-pebble-rgb-170: 43, 46, 50;
+
+  /* Pine Brand color ramp */
+  --oj-sp-rw-pine-rgb-10: 243, 252, 247;
+  --oj-sp-rw-pine-rgb-20: 233, 249, 238;
+  --oj-sp-rw-pine-rgb-30: 224, 245, 231;
+  --oj-sp-rw-pine-rgb-40: 203, 233, 214;
+  --oj-sp-rw-pine-rgb-50: 183, 217, 194;
+  --oj-sp-rw-pine-rgb-60: 153, 194, 166;
+  --oj-sp-rw-pine-rgb-70: 134, 181, 150;
+  --oj-sp-rw-pine-rgb-80: 116, 166, 131;
+  --oj-sp-rw-pine-rgb-90: 92, 146, 109;
+  --oj-sp-rw-pine-rgb-100: 76, 130, 92;
+  --oj-sp-rw-pine-rgb-110: 70, 117, 83;
+  --oj-sp-rw-pine-rgb-120: 63, 107, 75;
+  --oj-sp-rw-pine-rgb-130: 58, 97, 69;
+  --oj-sp-rw-pine-rgb-140: 51, 85, 60;
+  --oj-sp-rw-pine-rgb-150: 44, 74, 53;
+  --oj-sp-rw-pine-rgb-160: 37, 61, 44;
+  --oj-sp-rw-pine-rgb-170: 30, 50, 36;
+
+  /* Plum Brand color ramp */
+  --oj-sp-rw-plum-rgb-10: 252, 248, 255;
+  --oj-sp-rw-plum-rgb-20: 248, 241, 252;
+  --oj-sp-rw-plum-rgb-30: 245, 236, 251;
+  --oj-sp-rw-plum-rgb-40: 234, 221, 244;
+  --oj-sp-rw-plum-rgb-50: 219, 201, 229;
+  --oj-sp-rw-plum-rgb-60: 196, 176, 209;
+  --oj-sp-rw-plum-rgb-70: 183, 161, 196;
+  --oj-sp-rw-plum-rgb-80: 168, 144, 182;
+  --oj-sp-rw-plum-rgb-90: 149, 124, 164;
+  --oj-sp-rw-plum-rgb-100: 132, 106, 146;
+  --oj-sp-rw-plum-rgb-110: 121, 96, 135;
+  --oj-sp-rw-plum-rgb-120: 111, 87, 123;
+  --oj-sp-rw-plum-rgb-130: 99, 78, 113;
+  --oj-sp-rw-plum-rgb-140: 89, 69, 100;
+  --oj-sp-rw-plum-rgb-150: 77, 60, 87;
+  --oj-sp-rw-plum-rgb-160: 63, 48, 72;
+  --oj-sp-rw-plum-rgb-170: 54, 41, 60;
+
+  /* Rose Brand color ramp */
+  --oj-sp-rw-rose-rgb-10: 253, 248, 250;
+  --oj-sp-rw-rose-rgb-20: 250, 242, 244;
+  --oj-sp-rw-rose-rgb-30: 251, 236, 239;
+  --oj-sp-rw-rose-rgb-40: 246, 218, 225;
+  --oj-sp-rw-rose-rgb-50: 234, 198, 207;
+  --oj-sp-rw-rose-rgb-60: 217, 171, 182;
+  --oj-sp-rw-rose-rgb-70: 206, 155, 167;
+  --oj-sp-rw-rose-rgb-80: 194, 136, 151;
+  --oj-sp-rw-rose-rgb-90: 180, 114, 130;
+  --oj-sp-rw-rose-rgb-100: 163, 100, 114;
+  --oj-sp-rw-rose-rgb-110: 146, 88, 101;
+  --oj-sp-rw-rose-rgb-120: 134, 80, 92;
+  --oj-sp-rw-rose-rgb-130: 122, 71, 83;
+  --oj-sp-rw-rose-rgb-140: 108, 63, 73;
+  --oj-sp-rw-rose-rgb-150: 95, 54, 63;
+  --oj-sp-rw-rose-rgb-160: 79, 43, 51;
+  --oj-sp-rw-rose-rgb-170: 65, 36, 43;
+
+  /* Sienna Brand color ramp */
+  --oj-sp-rw-sienna-rgb-10: 254, 249, 242;
+  --oj-sp-rw-sienna-rgb-20: 253, 243, 228;
+  --oj-sp-rw-sienna-rgb-30: 252, 237, 217;
+  --oj-sp-rw-sienna-rgb-40: 245, 222, 189;
+  --oj-sp-rw-sienna-rgb-50: 236, 203, 152;
+  --oj-sp-rw-sienna-rgb-60: 222, 176, 104;
+  --oj-sp-rw-sienna-rgb-70: 211, 159, 93;
+  --oj-sp-rw-sienna-rgb-80: 197, 140, 82;
+  --oj-sp-rw-sienna-rgb-90: 182, 119, 69;
+  --oj-sp-rw-sienna-rgb-100: 170, 100, 59;
+  --oj-sp-rw-sienna-rgb-110: 155, 87, 52;
+  --oj-sp-rw-sienna-rgb-120: 141, 79, 46;
+  --oj-sp-rw-sienna-rgb-130: 127, 72, 44;
+  --oj-sp-rw-sienna-rgb-140: 113, 63, 37;
+  --oj-sp-rw-sienna-rgb-150: 98, 55, 31;
+  --oj-sp-rw-sienna-rgb-160: 81, 44, 27;
+  --oj-sp-rw-sienna-rgb-170: 68, 38, 22;
+
+  /* Slate Brand color ramp */
+  --oj-sp-rw-slate-rgb-10: 246, 250, 250;
+  --oj-sp-rw-slate-rgb-20: 237, 246, 246;
+  --oj-sp-rw-slate-rgb-30: 231, 242, 242;
+  --oj-sp-rw-slate-rgb-40: 215, 229, 229;
+  --oj-sp-rw-slate-rgb-50: 194, 212, 212;
+  --oj-sp-rw-slate-rgb-60: 169, 187, 188;
+  --oj-sp-rw-slate-rgb-70: 153, 173, 174;
+  --oj-sp-rw-slate-rgb-80: 139, 157, 158;
+  --oj-sp-rw-slate-rgb-90: 121, 139, 138;
+  --oj-sp-rw-slate-rgb-100: 105, 119, 120;
+  --oj-sp-rw-slate-rgb-110: 96, 108, 109;
+  --oj-sp-rw-slate-rgb-120: 88, 99, 99;
+  --oj-sp-rw-slate-rgb-130: 79, 90, 90;
+  --oj-sp-rw-slate-rgb-140: 70, 79, 79;
+  --oj-sp-rw-slate-rgb-150: 60, 69, 69;
+  --oj-sp-rw-slate-rgb-160: 50, 57, 57;
+  --oj-sp-rw-slate-rgb-170: 42, 47, 47;
+
+  /* Teal Brand color ramp */
+  --oj-sp-rw-teal-rgb-10: 248, 250, 250;
+  --oj-sp-rw-teal-rgb-20: 240, 246, 245;
+  --oj-sp-rw-teal-rgb-30: 232, 241, 240;
+  --oj-sp-rw-teal-rgb-40: 214, 229, 229;
+  --oj-sp-rw-teal-rgb-50: 188, 213, 213;
+  --oj-sp-rw-teal-rgb-60: 154, 191, 191;
+  --oj-sp-rw-teal-rgb-70: 137, 178, 176;
+  --oj-sp-rw-teal-rgb-80: 118, 162, 160;
+  --oj-sp-rw-teal-rgb-90: 98, 143, 141;
+  --oj-sp-rw-teal-rgb-100: 79, 125, 123;
+  --oj-sp-rw-teal-rgb-110: 70, 113, 115;
+  --oj-sp-rw-teal-rgb-120: 62, 104, 108;
+  --oj-sp-rw-teal-rgb-130: 55, 93, 97;
+  --oj-sp-rw-teal-rgb-140: 49, 83, 87;
+  --oj-sp-rw-teal-rgb-150: 43, 72, 75;
+  --oj-sp-rw-teal-rgb-160: 35, 59, 63;
+  --oj-sp-rw-teal-rgb-170: 30, 49, 51;
+  
+  /* Product map color palette */
+  --oj-sp-rw-pine-green-0: 44, 74, 53;
+  --oj-sp-rw-pine-green-1: 37, 61, 44;
+  --oj-sp-rw-pine-green-1-alpha: 37, 61, 44, 0.9;
+  --oj-sp-rw-pine-green-2: 46, 73, 20;
+  --oj-sp-rw-pine-green-3: 60, 96, 26;
+  --oj-sp-rw-pine-green-4: 51, 85, 60;
+  --oj-sp-rw-pine-green-5: 38, 61, 16;
+  --oj-sp-rw-pine-green-6: 58, 97, 69;
+  --oj-sp-rw-pine-green-7: 53, 86, 23;
+  --oj-sp-rw-rose-sienna-0: 108, 63, 73;
+  --oj-sp-rw-rose-sienna-1: 98, 55, 31;
+  --oj-sp-rw-rose-sienna-1-alpha: 98, 54, 31, 0.9;
+  --oj-sp-rw-rose-sienna-2: 122, 71, 83;
+  --oj-sp-rw-rose-sienna-3: 79, 43, 51;
+  --oj-sp-rw-rose-sienna-4: 113, 63, 37;
+  --oj-sp-rw-rose-sienna-5: 95, 54, 63;
+  --oj-sp-rw-rose-sienna-6: 127, 72, 44;
+  --oj-sp-rw-rose-sienna-7: 81, 44, 27;
+  --oj-sp-rw-teal-fog-0: 59, 92, 105;
+  --oj-sp-rw-teal-fog-1: 36, 58, 67;
+  --oj-sp-rw-teal-fog-1-alpha: 36, 58, 67, 0.9;
+  --oj-sp-rw-teal-fog-2: 43, 72, 75;
+  --oj-sp-rw-teal-fog-3: 49, 83, 87;
+  --oj-sp-rw-teal-fog-4: 44, 71, 82;
+  --oj-sp-rw-teal-fog-5: 35, 59, 63;
+  --oj-sp-rw-teal-fog-6: 55, 93, 97;
+  --oj-sp-rw-teal-fog-7: 50, 81, 94;
+  
+  /* shell header height */
+  --oj-sp-rw-shell-header-height: 72px;
+
+  /* variable to adjust the Shellpopupheight when maintenance/sandbox/impersonation banner exists */
+  --oj-sp-rw-set-banner-height: 0px;
+
+  /* To hold texture images based on default or selected piller theme */
+  --oj-sp-theme-global-texture-image: url('../css-additions/resources/img/texture-neutral.png');
+}
+
+/******************** END: GENERIC THEME CSS ********************/
+
+.oj-sp-color-invert-bg {
+  background-color: var(--oj-sp-theme-page-container-bkgd, rgb(var(--oj-palette-neutral-rgb-10)));
+}
+.oj-color-invert.oj-sp-color-invert-bg {
+  background-color: var(--oj-sp-theme-page-container-bkgd, rgb(var(--oj-palette-neutral-rgb-170)));
+}
